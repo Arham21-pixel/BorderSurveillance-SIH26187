@@ -1,0 +1,10 @@
+zones:
+  - id: north-restricted-belt
+    camera_id: cam-north-01
+    name: Inner fence belt
+    restricted: true
+    polygon:
+      - [80, 200]
+      - [900, 200]
+      - [900, 520]
+      - [80, 520]

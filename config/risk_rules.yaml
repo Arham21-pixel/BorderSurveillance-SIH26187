@@ -1,0 +1,11 @@
+rules:
+  zone_intrusion_weight: 0.7
+  loiter_weight: 0.25
+  loiter_seconds: 30
+  group_weight: 0.2
+  group_min_size: 3
+  vehicle_near_fence_weight: 0.35
+  night_bonus: 0.1
+thresholds:
+  high: 0.75
+  medium: 0.45

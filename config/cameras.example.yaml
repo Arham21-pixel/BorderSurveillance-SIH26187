@@ -1,0 +1,13 @@
+cameras:
+  - id: cam-north-01
+    name: North Fence 01
+    source: 0
+    latitude: 34.1526
+    longitude: 77.5771
+    sector: north
+  - id: cam-west-02
+    name: River Crossing 02
+    source: data/sample_videos/demo.mp4
+    latitude: 34.1401
+    longitude: 77.5102
+    sector: west

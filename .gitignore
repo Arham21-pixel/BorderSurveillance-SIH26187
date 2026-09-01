@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+
+# Models and large assets
+vision/models/*.pt
+vision/models/*.onnx
+vision/models/*.engine
+data/sample_videos/*
+!data/sample_videos/.gitkeep
+data/test_images/*
+!data/test_images/.gitkeep
+data/demo/*
+!data/demo/.gitkeep
+evidence/output/
+*.mp4
+*.avi
+*.mkv
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+*.swp
+
+# Docker / logs
+*.log
+docker-data/
