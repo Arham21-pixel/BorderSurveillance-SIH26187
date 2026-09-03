@@ -217,10 +217,15 @@ config = VisionConfig(
    require a restart loop at the application level.
 3. **No hardware acceleration** configured by default — `device="cpu"`.
    Enable CUDA by setting `device="cuda:0"` and installing the GPU torch build.
-4. **No ONNX/OpenVINO** export configured — it's supported by Ultralytics
-   but not wired up in the pipeline yet.
+4. **ONNX / OpenVINO Optimization:** To achieve higher FPS and lower latency on CPU, you can export the YOLO model to ONNX or OpenVINO format (e.g. `yolo export model=yolov8n.pt format=onnx` or `format=openvino`) and simply pass the exported file/folder to the `--model` argument. The Ultralytics backend automatically detects the format and runs optimized CPU inference!
 5. **Model download** requires internet access on first run (Ultralytics CDN).
    Pre-place weights in `vision/models/` for air-gapped environments.
+
+---
+
+## CPU / Performance Benchmarking
+
+The `run_cv_pipeline.py` script automatically measures and outputs actual FPS, processing latency, and records the hardware node used at the end of execution. Do not invent performance numbers — rely on the pipeline's printed summary.
 
 ---
 

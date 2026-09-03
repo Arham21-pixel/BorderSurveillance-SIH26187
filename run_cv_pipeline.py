@@ -34,6 +34,9 @@ import datetime
 import json
 import os
 import sys
+import cv2
+import time
+import platform
 
 # Make sure the repo root is importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -128,6 +131,7 @@ def run(args: argparse.Namespace) -> None:
 
     # ── Main loop ─────────────────────────────────────────────────────────────
     print("[RUN] Processing source…\n")
+    start_time = time.time()
 
     try:
         source = int(args.source)
@@ -196,10 +200,19 @@ def run(args: argparse.Namespace) -> None:
                 total_events.append(event.to_dict())
 
     # ── Summary ───────────────────────────────────────────────────────────────
+    total_time = time.time() - start_time
+    fps = frames_processed / total_time if total_time > 0 else 0
+    latency_ms = (total_time / frames_processed * 1000) if frames_processed > 0 else 0
+
     print("\n" + "=" * 65)
-    print("  PIPELINE SUMMARY")
+    print("  PIPELINE SUMMARY & BENCHMARK")
     print("=" * 65)
+    print(f"  Hardware         : {platform.system()} {platform.release()} ({platform.machine()})")
+    print(f"  CPU / Node       : {platform.processor()} / {platform.node()}")
+    print(f"  Total time       : {total_time:.2f} seconds")
     print(f"  Frames processed : {frames_processed}")
+    print(f"  Actual FPS       : {fps:.2f} fps")
+    print(f"  Avg Latency      : {latency_ms:.2f} ms/frame")
     print(f"  Total detections : {total_detections}")
     print(f"  Behaviour events : {len(total_events)}")
     for kind, count in sorted(event_counts.items()):
@@ -255,6 +268,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--save-evidence", action="store_true", help="Save snapshot/metadata on events")
     p.add_argument("--evidence-dir", default="evidence/events", help="Evidence output directory")
     p.add_argument("--output-json", default="", help="Save all events to JSON file")
+    p.add_argument("--show", action="store_true", help="Show live video window with bounding boxes")
     return p
 
 
