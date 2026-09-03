@@ -1,12 +1,11 @@
-from pathlib import Path
+"""
+evidence/snapshot_generator.py
 
+Legacy snapshot generator — delegates to evidence.generator.snapshot.
+Retained for backwards compatibility.
+"""
+from __future__ import annotations
 
-def save_snapshot(frame, path: str) -> str:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    try:
-        import cv2
+from evidence.generator.snapshot import save_snapshot
 
-        cv2.imwrite(path, frame)
-    except Exception:
-        Path(path).write_bytes(b"")
-    return path
+__all__ = ["save_snapshot"]
