@@ -1,1 +1,1 @@
-# Intelligence package
+"""Border AI Sentinel intelligence package."""
