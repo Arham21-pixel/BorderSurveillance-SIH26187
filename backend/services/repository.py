@@ -36,6 +36,12 @@ class BaseRepository:
     def delete_camera(self, camera_id: UUID) -> bool:
         raise NotImplementedError
 
+    def upsert_track(self, payload: dict[str, Any]) -> dict:
+        raise NotImplementedError
+
+    def create_detection(self, payload: dict[str, Any]) -> dict:
+        raise NotImplementedError
+
 
 class SupabaseRepository(BaseRepository):
     def __init__(self) -> None:
@@ -120,6 +126,24 @@ class SupabaseRepository(BaseRepository):
     def create_event(self, payload: dict[str, Any]) -> dict:
         payload = {**payload, "id": str(uuid4())}
         rows = self._execute(self.client.table("behaviour_events").insert(payload))
+        return rows[0]
+
+    def upsert_track(self, payload: dict[str, Any]) -> dict:
+        rows = self._execute(
+            self.client.table("tracks").upsert(
+                payload,
+                on_conflict="camera_id,external_track_id",
+            )
+        )
+        if not rows:
+            raise AppError("Track upsert failed.", "track_upsert_failed", 500)
+        return rows[0]
+
+    def create_detection(self, payload: dict[str, Any]) -> dict:
+        payload = {**payload, "id": str(uuid4())}
+        rows = self._execute(self.client.table("detections").insert(payload))
+        if not rows:
+            raise AppError("Detection insert failed.", "detection_insert_failed", 500)
         return rows[0]
 
     def create_risk_score(self, payload: dict[str, Any]) -> dict:
@@ -244,6 +268,8 @@ class InMemoryRepository(BaseRepository):
             }
         }
         self.zones: dict[str, dict] = {}
+        self.tracks: dict[str, dict] = {}
+        self.detections: dict[str, dict] = {}
         self.events: dict[str, dict] = {}
         self.risk_scores: dict[str, dict] = {}
         self.alerts: dict[str, dict] = {}
@@ -323,6 +349,22 @@ class InMemoryRepository(BaseRepository):
         event_id = str(uuid4())
         row = {**payload, "id": event_id}
         self.events[event_id] = row
+        return row
+
+    def upsert_track(self, payload: dict[str, Any]) -> dict:
+        track_key = f"{payload['camera_id']}:{payload['external_track_id']}"
+        existing = self.tracks.get(track_key)
+        if existing:
+            existing.update(payload)
+            return existing
+        row = {**payload, "id": str(uuid4()), "created_at": _utcnow().isoformat()}
+        self.tracks[track_key] = row
+        return row
+
+    def create_detection(self, payload: dict[str, Any]) -> dict:
+        detection_id = str(uuid4())
+        row = {**payload, "id": detection_id}
+        self.detections[detection_id] = row
         return row
 
     def create_risk_score(self, payload: dict[str, Any]) -> dict:

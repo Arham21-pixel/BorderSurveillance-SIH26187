@@ -14,14 +14,42 @@ class IngestService:
     async def process_detection(self, payload: DetectionInput) -> PipelineItemResult:
         zone_rows = self.repo.list_zones(payload.camera_id)
         pipeline_result = self.pipeline.process_detection(payload, zone_rows)
+        timestamp_iso = payload.timestamp.isoformat()
+
+        track_row = self.repo.upsert_track(
+            {
+                "camera_id": str(payload.camera_id),
+                "external_track_id": payload.track_id,
+                "object_class": payload.object_class,
+                "start_time": timestamp_iso,
+                "last_seen": timestamp_iso,
+                "direction": pipeline_result.context.get("direction", "UNKNOWN"),
+                "dwell_time": float(pipeline_result.context.get("dwell_time") or 0.0),
+                "trajectory": [
+                    {"x": point.x, "y": point.y, "t": point.t.isoformat() if point.t else None}
+                    for point in payload.trajectory
+                ],
+            }
+        )
+
+        self.repo.create_detection(
+            {
+                "camera_id": str(payload.camera_id),
+                "track_id": track_row["id"],
+                "object_class": payload.object_class,
+                "confidence": payload.confidence,
+                "bounding_box": payload.bounding_box.model_dump(),
+                "timestamp": timestamp_iso,
+            }
+        )
 
         event_row = self.repo.create_event(
             {
                 "camera_id": str(payload.camera_id),
-                "track_id": pipeline_result.track_uuid,
+                "track_id": track_row["id"],
                 "event_type": pipeline_result.event_type,
                 "event_data": pipeline_result.context,
-                "timestamp": payload.timestamp.isoformat(),
+                "timestamp": timestamp_iso,
             }
         )
 

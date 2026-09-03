@@ -107,11 +107,26 @@ class IntelligencePipeline:
             night_time=self._is_night(detection.timestamp) or bool(detection.attributes.get("night")),
             repeated_event=repeated,
         )
+        zone_event_payload = []
+        for evt in zone_events:
+            if isinstance(evt, dict):
+                zone_event_payload.append(evt)
+            else:
+                zone_event_payload.append(
+                    {
+                        "event_type": evt.event_type,
+                        "zone_id": evt.zone_id,
+                        "zone_type": evt.zone_type,
+                        "severity": evt.severity,
+                        "reason": evt.reason,
+                    }
+                )
+
         context = {
             "bbox": detection.bounding_box.model_dump(),
             "direction": direction,
             "dwell_time": dwell_time,
-            "zone_events": [evt.__dict__ for evt in zone_events],
+            "zone_events": zone_event_payload,
             "group_detected": group_detected,
             "unusual_trajectory": unusual,
             "reasons": reasons,
