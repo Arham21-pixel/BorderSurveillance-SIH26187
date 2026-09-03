@@ -70,9 +70,9 @@ class _AlertDeduplicator:
 # ---------------------------------------------------------------------------
 
 def run(args: argparse.Namespace) -> None:
-    print("\n" + "═" * 65)
-    print("  BORDER AI SENTINEL — CV Pipeline")
-    print("═" * 65)
+    print("\n" + "=" * 65)
+    print("  BORDER AI SENTINEL - CV Pipeline")
+    print("=" * 65)
     print(f"  Source    : {args.source}")
     print(f"  Camera ID : {args.camera_id}")
     print(f"  Model     : {args.model}")
@@ -80,7 +80,7 @@ def run(args: argparse.Namespace) -> None:
     print(f"  Img Size  : {args.imgsz}")
     print(f"  Sample N  : every {args.sample_every} frame(s)")
     print(f"  Low-light : {args.low_light}")
-    print("═" * 65 + "\n")
+    print("=" * 65 + "\n")
 
     # ── Config ────────────────────────────────────────────────────────────────
     config = VisionConfig(
@@ -172,7 +172,7 @@ def run(args: argparse.Namespace) -> None:
                 event_counts[event.kind] = event_counts.get(event.kind, 0) + 1
 
                 print(
-                    f"\n  ⚠  [{severity.upper()}] {event.kind.upper()}\n"
+                    f"\n  !  [{severity.upper()}] {event.kind.upper()}\n"
                     f"     Track: {event.track_id}  "
                     f"Class: {event.object_class}  "
                     f"Conf: {event.confidence:.2f}\n"
@@ -196,15 +196,15 @@ def run(args: argparse.Namespace) -> None:
                 total_events.append(event.to_dict())
 
     # ── Summary ───────────────────────────────────────────────────────────────
-    print("\n" + "═" * 65)
+    print("\n" + "=" * 65)
     print("  PIPELINE SUMMARY")
-    print("═" * 65)
+    print("=" * 65)
     print(f"  Frames processed : {frames_processed}")
     print(f"  Total detections : {total_detections}")
     print(f"  Behaviour events : {len(total_events)}")
     for kind, count in sorted(event_counts.items()):
-        print(f"    {kind:<20} × {count}")
-    print("═" * 65 + "\n")
+        print(f"    {kind:<20} x {count}")
+    print("=" * 65 + "\n")
 
     if args.output_json and total_events:
         import pathlib
