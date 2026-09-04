@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAlerts } from "../hooks/useAlerts";
 import { useCameras } from "../hooks/useCameras";
+import { useAuth } from "../hooks/useAuth";
 import { formatTime } from "../utils/formatters";
 
 interface TopBarProps {
@@ -24,6 +25,7 @@ interface TopBarProps {
 export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) {
   const alerts = useAlerts();
   const cameras = useCameras();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [currentTime, setCurrentTime] = useState("");
@@ -63,9 +65,10 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowLogoutModal(false);
-    navigate("/");
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -207,15 +210,15 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
         {/* Current User Badge */}
         <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-[#101820] border border-[#243140]">
           <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#16202b] to-[#3dd6c6]/30 border border-[#3dd6c6]/50 flex items-center justify-center text-xs font-bold text-[#3dd6c6]">
-            VS
+            {user?.name ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "OP"}
           </div>
           <div className="hidden md:flex flex-col text-left">
             <span className="text-xs font-semibold text-[#e8eef5] leading-tight">
-              Capt. V. Sharma
+              {user?.name || user?.email || "Capt. V. Sharma"}
             </span>
             <span className="text-[10px] font-mono text-[#3dd6c6] flex items-center gap-1">
               <UserCheck className="w-2.5 h-2.5" />
-              OPERATOR #402
+              {user?.role ? user.role.toUpperCase() : "OPERATOR #402"}
             </span>
           </div>
         </div>
