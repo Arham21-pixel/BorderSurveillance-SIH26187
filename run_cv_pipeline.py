@@ -248,9 +248,10 @@ def _parse_epoch(ts: str) -> float:
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="BORDER AI SENTINEL — CV pipeline demo",
+        description="BORDER AI SENTINEL - CV pipeline demo",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
     p.add_argument("--source", default="0", help="Video file path, RTSP URL, or webcam index")
     p.add_argument("--camera-id", default="cam-demo", help="Logical camera identifier")
     p.add_argument("--model", default="yolov8n.pt", help="YOLO model weights path")

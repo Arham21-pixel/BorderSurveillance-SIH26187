@@ -30,9 +30,13 @@ npm-debug.log*
 credentials.json
 
 # Models and large assets
+*.pt
+*.onnx
+*.engine
 vision/models/*.pt
 vision/models/*.onnx
 vision/models/*.engine
+
 data/sample_videos/*
 !data/sample_videos/.gitkeep
 data/test_images/*

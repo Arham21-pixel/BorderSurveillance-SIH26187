@@ -10,6 +10,7 @@ TrackingResult   : Typed output object for one tracked object.
 
 from vision.tracking.result import TrackingResult
 from vision.tracking.track_manager import TrackManager
-from vision.tracking.tracker import ByteStyleTracker
+from vision.tracking.tracker import ByteStyleTracker, SimpleTracker
 
-__all__ = ["ByteStyleTracker", "TrackManager", "TrackingResult"]
+__all__ = ["ByteStyleTracker", "SimpleTracker", "TrackManager", "TrackingResult"]
+
