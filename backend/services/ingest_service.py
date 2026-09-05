@@ -64,7 +64,8 @@ class IngestService:
             }
         )
 
-        alert_created = pipeline_result.risk_result.score >= 25
+        # PRD-001 / TRD-001 v0.2: alerts are raised at SUSPICIOUS+ (score ≥ 30)
+        alert_created = pipeline_result.risk_result.score >= 30
         if alert_created:
             alert_row = self.repo.create_alert(
                 {

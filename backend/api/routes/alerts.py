@@ -50,11 +50,23 @@ def get_alert(
 
 
 @router.patch("/{alert_id}/acknowledge", response_model=AlertOut)
+async def acknowledge_alert_patch(
+    alert_id: UUID,
+    service: AlertService = Depends(_service),
+    user: UserContext = Depends(get_current_user),
+) -> AlertOut:
+    """PATCH /api/alerts/{id}/acknowledge — kept for backward compatibility."""
+    user_uuid = UUID(user.id) if _is_uuid(user.id) else None
+    return await service.acknowledge_alert(alert_id=alert_id, user_id=user_uuid)
+
+
+@router.post("/{alert_id}/acknowledge", response_model=AlertOut)
 async def acknowledge_alert(
     alert_id: UUID,
     service: AlertService = Depends(_service),
     user: UserContext = Depends(get_current_user),
 ) -> AlertOut:
+    """POST /api/alerts/{id}/acknowledge — per TRD-001 v0.2."""
     user_uuid = UUID(user.id) if _is_uuid(user.id) else None
     return await service.acknowledge_alert(alert_id=alert_id, user_id=user_uuid)
 

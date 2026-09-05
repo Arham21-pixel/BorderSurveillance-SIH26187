@@ -92,6 +92,27 @@ class IntelligencePipeline:
         dedupe_key = f"{track_key}:{event_type}"
         repeated = not self.event_engine.should_emit(dedupe_key, detection.timestamp, settings.event_dedupe_seconds)
 
+        # Toward-boundary: flagged by zone engine or explicitly passed via attributes
+        toward_boundary = any(
+            evt.event_type in ("boundary_crossing", "toward_boundary")
+            for evt in zone_events
+            if not isinstance(evt, dict)
+        ) or bool(detection.attributes.get("toward_boundary"))
+
+        # Animal / benign-object context  (PRD: -40 contributor)
+        is_animal = detection.object_class.lower() in (
+            "animal", "bird", "cat", "dog", "horse", "cow", "sheep",
+        ) or bool(detection.attributes.get("is_animal"))
+
+        # Normal trajectory: no anomalies flagged at all
+        normal_trajectory_ok = (
+            not restricted_violation
+            and not loitering
+            and not toward_boundary
+            and not group_detected
+            and not unusual
+        )
+
         risk_context = RiskContext(
             event_id=track_uuid,
             timestamp=detection.timestamp,
@@ -100,10 +121,12 @@ class IntelligencePipeline:
             zone_type=(zone_events[0].zone_type if zone_events else None),
             restricted_zone_violation=restricted_violation,
             direction=direction,
+            toward_boundary=toward_boundary,
+            normal_trajectory=normal_trajectory_ok,
             dwell_time=dwell_time,
             loitering=loitering,
             group_movement=group_detected,
-            unusual_trajectory=unusual,
+            is_animal=is_animal,
             night_time=self._is_night(detection.timestamp) or bool(detection.attributes.get("night")),
             repeated_event=repeated,
         )
@@ -128,7 +151,10 @@ class IntelligencePipeline:
             "dwell_time": dwell_time,
             "zone_events": zone_event_payload,
             "group_detected": group_detected,
+            "toward_boundary": toward_boundary,
+            "is_animal": is_animal,
             "unusual_trajectory": unusual,
+            "normal_trajectory": normal_trajectory_ok,
             "reasons": reasons,
         }
         built = self.event_engine.build_event(event_type=event_type, risk_context=risk_context, context=context)

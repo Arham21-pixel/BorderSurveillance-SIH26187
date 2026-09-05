@@ -4,10 +4,19 @@ import type { EventItem } from "../types/event";
 import RiskBadge from "../components/RiskBadge";
 import { formatTime } from "../utils/formatters";
 
+/**
+ * Map a 0-100 risk score to a severity string.
+ * PRD-001 / TRD-001 v0.2 bands:
+ *   0-29  → normal
+ *   30-59 → suspicious
+ *   60-79 → high
+ *   80-100→ critical
+ */
 function severityFromScore(score: number): string {
-  if (score >= 0.75) return "high";
-  if (score >= 0.45) return "medium";
-  return "low";
+  if (score >= 80) return "critical";
+  if (score >= 60) return "high";
+  if (score >= 30) return "suspicious";
+  return "normal";
 }
 
 export default function Events() {
@@ -27,7 +36,7 @@ export default function Events() {
               <tr key={event.id}>
                 <td>{event.kind}</td>
                 <td>{event.camera_id}</td>
-                <td><RiskBadge severity={severityFromScore(event.risk_score)} /> {event.risk_score.toFixed(2)}</td>
+                <td><RiskBadge severity={severityFromScore(event.risk_score)} /> {event.risk_score.toFixed(0)}/100</td>
                 <td>{formatTime(event.timestamp)}</td>
               </tr>
             ))}
