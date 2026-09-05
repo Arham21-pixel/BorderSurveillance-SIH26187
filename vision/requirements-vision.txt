@@ -1,0 +1,24 @@
+# Vision-specific dependencies for BORDER AI SENTINEL
+# Install into a Python 3.11 virtual environment:
+#
+#   python -m venv .venv
+#   .venv\Scripts\activate        # Windows
+#   pip install -r vision/requirements-vision.txt
+
+# ── Core CV stack ─────────────────────────────────────────────────────────────
+numpy>=1.26,<3.0
+opencv-python-headless>=4.9,<5.0
+
+# ── YOLO detection ────────────────────────────────────────────────────────────
+# Ultralytics bundles torch; use CPU torch for lightweight installs.
+ultralytics>=8.3,<9.0
+
+# ── PyTorch (CPU-only build) ──────────────────────────────────────────────────
+# For GPU support, install the CUDA variant manually from https://pytorch.org
+# and comment out these two lines.
+torch>=2.2,<3.0
+torchvision>=0.17,<1.0
+
+# ── Optional: supervision (ByteTrack, visualisation helpers) ─────────────────
+# Uncomment to use supervision.ByteTrack as a drop-in upgrade.
+# supervision>=0.22,<1.0

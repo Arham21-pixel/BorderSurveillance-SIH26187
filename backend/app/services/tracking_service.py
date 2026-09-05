@@ -1,7 +1,8 @@
-from vision.tracking.track_manager import TrackManager
+from vision.tracking.tracker import SimpleTracker
 
-_manager = TrackManager(max_age=30)
+_tracker = SimpleTracker(max_age=30)
 
 
 def update(detections: list[dict]) -> list[dict]:
-    return _manager.update(detections)
+    return _tracker.update(detections)
+
