@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { DashboardLayout } from "./layouts";
 import Login from "./pages/Login";
 import Alerts from "./pages/Alerts";
+import AlertDetails from "./pages/AlertDetails";
 import Analytics from "./pages/Analytics";
 import Cameras from "./pages/Cameras";
 import Dashboard from "./pages/Dashboard";
@@ -28,6 +29,7 @@ export default function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/cameras" element={<Cameras />} />
                   <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/alerts/:alertId" element={<AlertDetails />} />
                   <Route path="/evidence" element={<Evidence />} />
                   <Route path="/map" element={<MapPage />} />
                   <Route path="/events" element={<Events />} />

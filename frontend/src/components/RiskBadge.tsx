@@ -1,40 +1,38 @@
-/**
- * RiskBadge — renders a colour-and-text severity badge.
- *
- * DRD-001 §10: severity must NEVER be communicated by colour alone.
- * This component always renders the severity text label too.
- *
- * Accepts both lowercase ("critical") and uppercase ("CRITICAL").
- * PRD-001 / TRD-001 v0.2 severity bands:
- *   normal · suspicious · high · critical
- */
+interface RiskBadgeProps {
+  severity: string;
+  size?: "sm" | "md";
+}
 
-const STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  critical:   { bg: "#7f1d1d", color: "#fca5a5", label: "CRITICAL" },
-  high:       { bg: "#7c2d12", color: "#fdba74", label: "HIGH" },
-  suspicious: { bg: "#713f12", color: "#fde047", label: "SUSPICIOUS" },
-  normal:     { bg: "#14532d", color: "#86efac", label: "NORMAL" },
-};
+export function normalizeSeverity(sev: string): "CRITICAL" | "HIGH" | "SUSPICIOUS" | "NORMAL" {
+  const upper = (sev || "").toUpperCase();
+  if (upper === "CRITICAL" || upper === "CRIT") return "CRITICAL";
+  if (upper === "HIGH") return "HIGH";
+  if (upper === "MEDIUM" || upper === "SUSPICIOUS" || upper === "MED" || upper === "WARN") return "SUSPICIOUS";
+  return "NORMAL";
+}
 
-export default function RiskBadge({ severity }: { severity: string }) {
-  const key = severity.toLowerCase();
-  const style = STYLES[key] ?? STYLES["normal"];
+export default function RiskBadge({ severity, size = "sm" }: RiskBadgeProps) {
+  const norm = normalizeSeverity(severity);
+
+  const styleMap = {
+    CRITICAL: "bg-[#3a1212] text-[#ff4d4d] border-[#ff4d4d]/50",
+    HIGH: "bg-[#3a1515] text-[#ff5a5a] border-[#ff5a5a]/40",
+    SUSPICIOUS: "bg-[#3a2e12] text-[#f5b942] border-[#f5b942]/40",
+    NORMAL: "bg-[#14321c] text-[#5ad67a] border-[#5ad67a]/40",
+  };
+
+  const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]";
 
   return (
     <span
-      className={`badge badge-${key}`}
-      style={{
-        background: style.bg,
-        color: style.color,
-        padding: "2px 8px",
-        borderRadius: 4,
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.05em",
-      }}
-      aria-label={`Severity: ${style.label}`}
+      className={`inline-flex items-center font-mono font-bold uppercase rounded border tracking-wider ${styleMap[norm]} ${sizeClasses}`}
     >
-      {style.label}
+      <span
+        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+          norm === "CRITICAL" ? "bg-[#ff4d4d] animate-ping" : norm === "HIGH" ? "bg-[#ff5a5a]" : norm === "SUSPICIOUS" ? "bg-[#f5b942]" : "bg-[#5ad67a]"
+        }`}
+      />
+      {norm}
     </span>
   );
 }

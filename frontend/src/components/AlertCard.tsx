@@ -1,123 +1,163 @@
-/**
- * AlertCard — DRD-001 v0.2 compliant
- *
- * Required fields per DRD §4 Alert Card:
- *   Severity · Risk Score · Object · Camera · Zone · Time · Duration
- *   Direction · Reasons · Evidence · Status · Action
- *
- * Severity is communicated via BOTH colour badge AND text label
- * so it remains accessible even without colour perception (DRD §10).
- */
+import RiskBadge, { normalizeSeverity } from "./RiskBadge";
 import type { Alert } from "../types/alert";
 import { formatTime } from "../utils/formatters";
+import {
+  Camera,
+  Clock,
+  Check,
+  ChevronRight,
+  FileSearch,
+  Activity,
+  AlertOctagon,
+  ShieldCheck
+} from "lucide-react";
 
-// ── helpers ────────────────────────────────────────────────────────────────
-
-function severityLabel(s: string): string {
-  return s.toUpperCase();
+interface AlertCardProps {
+  alert: Alert;
+  onAcknowledge?: (id: string) => void;
+  onSelect?: (alert: Alert) => void;
+  isSelected?: boolean;
 }
 
-/** Badge colour mapped from severity string (lowercase expected). */
-function badgeClass(severity: string): string {
-  switch (severity.toLowerCase()) {
-    case "critical":   return "badge-critical";
-    case "high":       return "badge-high";
-    case "suspicious": return "badge-suspicious";
-    default:           return "badge-normal";
-  }
-}
+export default function AlertCard({
+  alert,
+  onAcknowledge,
+  onSelect,
+  isSelected,
+}: AlertCardProps) {
+  const normSeverity = normalizeSeverity(alert.severity);
 
-/** Human-readable score bar width (0-100 → CSS percent). */
-function scoreBarStyle(score: number): React.CSSProperties {
-  const pct = Math.max(0, Math.min(100, score));
-  const colour =
-    pct >= 80 ? "#ef4444" :   // critical — red
-    pct >= 60 ? "#f97316" :   // high     — orange
-    pct >= 30 ? "#eab308" :   // suspicious — yellow
-                "#22c55e";    // normal   — green
-  return { width: `${pct}%`, backgroundColor: colour, height: 6, borderRadius: 3, transition: "width 0.3s" };
-}
+  // Compute or format risk score (0 - 1 or default based on severity)
+  const riskScore =
+    alert.risk_score ??
+    (normSeverity === "CRITICAL"
+      ? 0.94
+      : normSeverity === "HIGH"
+      ? 0.82
+      : normSeverity === "SUSPICIOUS"
+      ? 0.58
+      : 0.28);
 
-// ── component ──────────────────────────────────────────────────────────────
+  const eventType =
+    alert.event_type ||
+    (alert.title.toLowerCase().includes("zone") || alert.title.toLowerCase().includes("restricted")
+      ? "zone_intrusion"
+      : alert.title.toLowerCase().includes("loiter")
+      ? "loitering"
+      : alert.title.toLowerCase().includes("group")
+      ? "group_formation"
+      : "perimeter_anomaly");
 
-import React from "react";
-
-export default function AlertCard({ alert }: { alert: Alert }) {
-  const score   = alert.risk_score ?? 0;
-  const reasons = alert.reasons ?? [];
-  const extra   = alert.extra   ?? {};
-  const eventType = String(extra.event_type ?? alert.title ?? "Alert");
-
-  // Split reasons into positive and negative contributors for display
-  const positiveReasons = reasons.filter(r => !r.includes("negative contributor"));
-  const negativeReasons = reasons.filter(r => r.includes("negative contributor"));
+  const hasEvidence = Boolean(alert.evidence_path);
+  const isOpen = alert.status === "open";
 
   return (
     <article
-      className={`alert-card ${badgeClass(alert.severity)}`}
-      style={{ borderLeft: `4px solid currentColor`, padding: "12px 16px", marginBottom: 8, borderRadius: 6 }}
+      onClick={() => onSelect?.(alert)}
+      className={`p-4 rounded-xl border transition-all cursor-pointer ${
+        isSelected
+          ? "bg-[#16202b] border-[#3dd6c6]/60 shadow-lg shadow-[#3dd6c6]/5"
+          : "bg-[#101820] border-[#243140] hover:border-[#3dd6c6]/40 hover:bg-[#16202b]/40"
+      } ${
+        normSeverity === "CRITICAL"
+          ? "border-l-4 border-l-[#ff4d4d]"
+          : normSeverity === "HIGH"
+          ? "border-l-4 border-l-[#ff5a5a]"
+          : normSeverity === "SUSPICIOUS"
+          ? "border-l-4 border-l-[#f5b942]"
+          : "border-l-4 border-l-[#5ad67a]"
+      }`}
     >
-      {/* ── Header row: severity text + risk score ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <span
-          className={`badge ${badgeClass(alert.severity)}`}
-          aria-label={`Severity: ${severityLabel(alert.severity)}`}
-          style={{ fontWeight: 700, letterSpacing: "0.05em", padding: "2px 8px", borderRadius: 4 }}
-        >
-          {severityLabel(alert.severity)}
-        </span>
-
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>RISK SCORE</div>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>
-            {score.toFixed(0)}&nbsp;<span style={{ fontWeight: 400, fontSize: 12, color: "#9ca3af" }}>/ 100</span>
-          </div>
+      {/* Top Row: Severity, Risk Score, Status, Timestamp */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <RiskBadge severity={normSeverity} />
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0c141c] border border-[#243140] text-[#e8eef5]">
+            RISK: <span className={normSeverity === "CRITICAL" || normSeverity === "HIGH" ? "text-[#ff5a5a] font-bold" : "text-[#5ad67a]"}>{(riskScore * 100).toFixed(0)}%</span>
+          </span>
+          <span
+            className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
+              isOpen
+                ? "bg-[#3a1515] text-[#ff5a5a] border border-[#ff5a5a]/30"
+                : "bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/30"
+            }`}
+          >
+            {alert.status}
+          </span>
         </div>
-      </div>
 
-      {/* ── Score bar ── */}
-      <div style={{ background: "#374151", borderRadius: 3, marginBottom: 8 }}>
-        <div style={scoreBarStyle(score)} />
-      </div>
-
-      {/* ── Event type ── */}
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{eventType}</div>
-
-      {/* ── Meta: camera · zone · time ── */}
-      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <span>📷 {alert.camera_id}</span>
-        <span>🕐 {formatTime(alert.timestamp)}</span>
-        <span
-          style={{ padding: "1px 6px", borderRadius: 4, fontSize: 11,
-                   background: alert.status.toLowerCase() === "open" ? "#064e3b" : "#1f2937",
-                   color: alert.status.toLowerCase() === "open" ? "#34d399" : "#6b7280" }}
-        >
-          {alert.status.toUpperCase()}
+        <span className="text-[10px] font-mono text-[#8fa3b8] flex items-center gap-1">
+          <Clock className="w-3 h-3 text-[#3dd6c6]" />
+          {formatTime(alert.timestamp)}
         </span>
       </div>
 
-      {/* ── Positive risk contributors ── */}
-      {positiveReasons.length > 0 && (
-        <div style={{ marginBottom: 4 }}>
-          {positiveReasons.map((r, i) => (
-            <div key={i} style={{ fontSize: 12, color: "#fbbf24" }}>⚠ {r}</div>
-          ))}
-        </div>
-      )}
+      {/* Alert Title & Reason Summary */}
+      <div className="mb-2">
+        <h3 className="text-sm font-bold text-[#e8eef5] line-clamp-1 mb-1 flex items-center gap-1.5">
+          {normSeverity === "CRITICAL" && <AlertOctagon className="w-4 h-4 text-[#ff4d4d] shrink-0" />}
+          {alert.title}
+        </h3>
+        <p className="text-xs text-[#8fa3b8] line-clamp-2 leading-relaxed">
+          {alert.description || alert.reason || "Autonomous behavior engine flag raised from live video surveillance."}
+        </p>
+      </div>
 
-      {/* ── Negative contributors (shown where applicable — DRD §7) ── */}
-      {negativeReasons.length > 0 && (
-        <div style={{ marginBottom: 4 }}>
-          {negativeReasons.map((r, i) => (
-            <div key={i} style={{ fontSize: 12, color: "#6ee7b7" }}>↓ {r}</div>
-          ))}
-        </div>
-      )}
+      {/* Metadata Row: Event Type, Camera ID, Evidence Availability */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#243140]/60 text-[10px] font-mono">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-[#3dd6c6]">
+            <Camera className="w-3 h-3" />
+            {alert.camera_id}
+          </span>
 
-      {/* ── Description fallback (if no reasons) ── */}
-      {reasons.length === 0 && alert.description && (
-        <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0" }}>{alert.description}</p>
-      )}
+          <span className="flex items-center gap-1 text-[#8fa3b8] bg-[#0c141c] px-2 py-0.5 rounded border border-[#243140]">
+            <Activity className="w-3 h-3 text-[#f5b942]" />
+            {eventType}
+          </span>
+
+          <span
+            className={`flex items-center gap-1 px-2 py-0.5 rounded border ${
+              hasEvidence
+                ? "bg-[#14321c] text-[#5ad67a] border-[#5ad67a]/30"
+                : "bg-[#0c141c] text-[#8fa3b8] border-[#243140]"
+            }`}
+          >
+            {hasEvidence ? (
+              <>
+                <ShieldCheck className="w-3 h-3 text-[#5ad67a]" />
+                <span>EVIDENCE READY</span>
+              </>
+            ) : (
+              <>
+                <FileSearch className="w-3 h-3 text-[#8fa3b8]" />
+                <span>NO EVIDENCE CLIP</span>
+              </>
+            )}
+          </span>
+        </div>
+
+        {/* Quick Action Button */}
+        <div className="flex items-center gap-2">
+          {isOpen && onAcknowledge && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAcknowledge(alert.id);
+              }}
+              className="px-2.5 py-1 rounded bg-[#16202b] hover:bg-[#5ad67a]/20 text-[#5ad67a] border border-[#5ad67a]/40 font-bold transition-all flex items-center gap-1"
+              title="Acknowledge this incident"
+            >
+              <Check className="w-3 h-3" />
+              Acknowledge
+            </button>
+          )}
+
+          <span className="text-[#8fa3b8] hover:text-[#3dd6c6] flex items-center">
+            Inspect <ChevronRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
     </article>
   );
 }
