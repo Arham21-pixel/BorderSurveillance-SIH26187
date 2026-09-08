@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import DetectionOverlay from "./DetectionOverlay";
 import { useLiveStream, StreamMode } from "../hooks/useLiveStream";
 import type { Camera } from "../types/camera";
+import type { AnalysisState, VideoSourceType } from "../hooks/useVideoSource";
 import {
   Video,
-  Radio,
   Maximize2,
   Minimize2,
   ShieldAlert,
@@ -16,6 +16,8 @@ import {
   RefreshCw,
   Sliders,
   AlertCircle,
+  FileVideo,
+  Wifi,
 } from "lucide-react";
 
 interface CameraFeedProps {
@@ -24,7 +26,57 @@ interface CameraFeedProps {
   cameras?: Camera[];
   onSelectCamera?: (camera: Camera) => void;
   showControls?: boolean;
+  // Video source integration
+  analysisState?: AnalysisState;
+  sourceType?: VideoSourceType;
+  mp4File?: string;
+  webcamStream?: MediaStream | null;
 }
+
+// ---------------------------------------------------------------------------
+// Analysis state → HUD display mapping
+// ---------------------------------------------------------------------------
+const ANALYSIS_HUD: Record<
+  string,
+  { label: string; dot: string; pulse: boolean; textColor: string }
+> = {
+  IDLE: {
+    label: "SELECT VIDEO SOURCE",
+    dot: "bg-slate-500",
+    pulse: false,
+    textColor: "text-slate-400",
+  },
+  READY: {
+    label: "READY",
+    dot: "bg-[#19D3C5]",
+    pulse: false,
+    textColor: "text-[#19D3C5]",
+  },
+  ANALYZING: {
+    label: "ANALYZING",
+    dot: "bg-[#35D07F]",
+    pulse: true,
+    textColor: "text-[#35D07F]",
+  },
+  STOPPED: {
+    label: "STOPPED",
+    dot: "bg-slate-400",
+    pulse: false,
+    textColor: "text-slate-400",
+  },
+  ERROR: {
+    label: "ERROR",
+    dot: "bg-[#FF4D67]",
+    pulse: false,
+    textColor: "text-[#FF4D67]",
+  },
+  OFFLINE: {
+    label: "FEED OFFLINE",
+    dot: "bg-rose-500",
+    pulse: false,
+    textColor: "text-rose-400",
+  },
+};
 
 export default function CameraFeed({
   title,
@@ -32,8 +84,13 @@ export default function CameraFeed({
   cameras = [],
   onSelectCamera,
   showControls = true,
+  analysisState = "IDLE",
+  sourceType = "mp4",
+  mp4File,
+  webcamStream,
 }: CameraFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [currentTime, setCurrentTime] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -55,7 +112,7 @@ export default function CameraFeed({
 
   const isOnline = activeCamera.status === "online";
 
-  // Stream state & integration hook
+  // Stream state & integration hook (for WebRTC / HLS)
   const {
     videoRef,
     connectionStatus,
@@ -67,29 +124,42 @@ export default function CameraFeed({
     isLiveFeed,
   } = useLiveStream(activeCamera, { preferredMode: "auto" });
 
-  // Live timestamp timer
+  // ---------------------------------------------------------------------------
+  // Attach webcam stream to <video> when provided
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const updateTime = () => {
+    const vid = webcamVideoRef.current;
+    if (!vid) return;
+    if (webcamStream) {
+      vid.srcObject = webcamStream;
+      vid.play().catch(() => {/* autoplay blocked — muted so should not happen */});
+    } else {
+      vid.srcObject = null;
+    }
+  }, [webcamStream]);
+
+  // ---------------------------------------------------------------------------
+  // Live timestamp ticker
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const update = () => {
       const now = new Date();
-      setCurrentTime(
-        now.toISOString().replace("T", " ").substring(0, 19) + " UTC"
-      );
+      setCurrentTime(now.toISOString().replace("T", " ").substring(0, 19) + " UTC");
     };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
+    update();
+    const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Listen to fullscreen changes
+  // ---------------------------------------------------------------------------
+  // Fullscreen
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", handle);
+    return () => document.removeEventListener("fullscreenchange", handle);
   }, []);
 
-  // Fullscreen toggle
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     try {
@@ -98,12 +168,30 @@ export default function CameraFeed({
       } else {
         await document.exitFullscreen();
       }
-    } catch {
-      // Fallback
-    }
+    } catch { /* silent */ }
   };
 
-  // Status Badge Rendering Helper
+  // ---------------------------------------------------------------------------
+  // Derived display values
+  // ---------------------------------------------------------------------------
+  const hudInfo = ANALYSIS_HUD[analysisState] ?? ANALYSIS_HUD["IDLE"];
+
+  // Which video element is "active"
+  const showWebcam = sourceType === "webcam" && !!webcamStream;
+  const showLiveHLS = !showWebcam && isLiveFeed;
+
+  // Top-left HUD label
+  const feedLabel = (() => {
+    if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
+    if (sourceType === "mp4" && mp4File) return `DEMO: ${mp4File.toUpperCase()}`;
+    if (sourceType === "rtsp") return "RTSP STREAM";
+    if (isLiveFeed) return "DEMO VIDEO ACTIVE";
+    return hudInfo.label; // e.g. "SELECT VIDEO SOURCE" / "READY" etc.
+  })();
+
+  // ---------------------------------------------------------------------------
+  // Connection badge
+  // ---------------------------------------------------------------------------
   const renderConnectionBadge = () => {
     if (!isOnline) {
       return (
@@ -141,15 +229,19 @@ export default function CameraFeed({
       );
     }
 
-    // Default Fallback
+    // Analysis state badge when no live stream
     return (
       <span
-        className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-white/[0.03] text-slate-400 border border-white/[0.06] flex items-center gap-1.5 cursor-pointer hover:bg-white/[0.08] hover:text-slate-200 transition-colors"
-        onClick={retryConnection}
-        title="Live feed currently disconnected. Click to retry connecting."
+        className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase flex items-center gap-1.5 ${
+          analysisState === "ANALYZING"
+            ? "bg-[#35D07F]/10 text-[#35D07F] border border-[#35D07F]/25"
+            : "bg-white/[0.03] text-slate-400 border border-white/[0.06] cursor-pointer hover:bg-white/[0.08] hover:text-slate-200 transition-colors"
+        }`}
+        onClick={analysisState !== "ANALYZING" ? retryConnection : undefined}
+        title={analysisState !== "ANALYZING" ? "Click to retry live connection." : undefined}
       >
-        <Radio className="w-3 h-3 text-slate-400" />
-        Feed Standby
+        <span className={`w-1.5 h-1.5 rounded-full ${hudInfo.dot} ${hudInfo.pulse ? "animate-pulse" : ""}`} />
+        {analysisState === "ANALYZING" ? "ANALYZING" : "Feed Standby"}
       </span>
     );
   };
@@ -161,9 +253,9 @@ export default function CameraFeed({
         isFullscreen ? "fixed inset-0 z-50 p-6 rounded-none border-none" : "p-4 sm:p-5"
       }`}
     >
-      {/* Top Header: Camera Identity, Location, Status, and Controls */}
+      {/* ── Top Header ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-white/[0.06] mb-3">
-        {/* Left: Camera Identity & Coordinates */}
+        {/* Left: Camera identity */}
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
             <Video className="w-4 h-4" />
@@ -176,6 +268,13 @@ export default function CameraFeed({
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] text-slate-400 border border-white/[0.04]">
                 {activeCamera.id}
               </span>
+              {/* Demo mode pill */}
+              {sourceType === "mp4" && mp4File && (
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                  <FileVideo className="w-2.5 h-2.5" />
+                  DEMO
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 mt-0.5">
               <span className="flex items-center gap-1 text-[#19D3C5]">
@@ -191,11 +290,11 @@ export default function CameraFeed({
           </div>
         </div>
 
-        {/* Right: Telemetry & Controls Toolbar */}
+        {/* Right: Controls + status badge */}
         <div className="flex items-center gap-2">
           {showControls && (
             <div className="flex items-center gap-1 bg-[#080D11]/60 p-1 rounded-xl border border-white/[0.06]">
-              {/* Stream Settings / Protocol Picker */}
+              {/* Stream Settings */}
               <button
                 type="button"
                 onClick={() => setShowStreamSettings(!showStreamSettings)}
@@ -204,7 +303,7 @@ export default function CameraFeed({
                     ? "bg-[#19D3C5]/15 text-[#19D3C5] border border-[#19D3C5]/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title="Configure Live Stream Source / Fallback"
+                title="Configure stream source"
               >
                 <Sliders className="w-3 h-3" />
                 <span className="hidden sm:inline">Video Mode</span>
@@ -252,12 +351,11 @@ export default function CameraFeed({
             </div>
           )}
 
-          {/* Connection Status Badge */}
           {renderConnectionBadge()}
         </div>
       </div>
 
-      {/* Stream Mode Configuration Drawer */}
+      {/* ── Stream Mode Config Drawer ── */}
       {showStreamSettings && (
         <div className="mb-3.5 p-3 rounded-xl bg-[#0C141C] border border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
@@ -295,7 +393,7 @@ export default function CameraFeed({
         </div>
       )}
 
-      {/* Camera Switcher Strip */}
+      {/* ── Camera Switcher Strip ── */}
       {cameras.length > 1 && !isFullscreen && (
         <div className="flex items-center gap-2 mb-3.5 overflow-x-auto pb-1 scrollbar-none">
           {cameras.map((c) => {
@@ -323,64 +421,83 @@ export default function CameraFeed({
         </div>
       )}
 
-      {/* Main Video / Live-Feed Viewport */}
-      <div className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#071011] rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center ${isFullscreen ? "h-full" : ""}`}>
-        {/* Real Live HTML5 Video Player */}
+      {/* ── Main Video Viewport ── */}
+      <div
+        className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#071011] rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center ${
+          isFullscreen ? "h-full" : ""
+        }`}
+      >
+        {/* ── WebRTC / HLS video element ── */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-            isLiveFeed ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+            showLiveHLS ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
           }`}
         />
 
-        {/* Fallback Synthetic Mock Background */}
-        {!isLiveFeed && (
+        {/* ── Webcam video element ── */}
+        <video
+          ref={webcamVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+            showWebcam ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+          }`}
+        />
+
+        {/* ── Fallback background (no live signal) ── */}
+        {!showLiveHLS && !showWebcam && (
           <>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(25,211,197,0.04)_0%,rgba(7,16,17,0.98)_100%)] pointer-events-none z-0" />
             <div className="absolute inset-0 pointer-events-none opacity-20 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.5)_3px)] z-0" />
           </>
         )}
 
-        {/* Live HUD: Top Left Stream Diagnostics */}
+        {/* ── HUD: Top Left — feed state ── */}
         <div className="absolute top-3 left-4 font-mono text-[11px] text-[#19D3C5] flex flex-col gap-1 pointer-events-none z-20">
-          <div className="flex items-center gap-2 font-medium tracking-wide bg-[#071011]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
-            <Radio className={`w-3 h-3 ${isLiveFeed ? "text-[#35D07F] animate-pulse" : "text-slate-500"}`} />
-            <span>
-              {isLiveFeed
-                ? "DEMO VIDEO ACTIVE"
-                : "FEED STANDBY · AWAITING VIDEO SIGNAL"}
-            </span>
+          <div
+            className={`flex items-center gap-2 font-medium tracking-wide bg-[#071011]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08] ${hudInfo.textColor}`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${hudInfo.dot} ${hudInfo.pulse ? "animate-pulse" : ""}`}
+            />
+            <span>{feedLabel}</span>
           </div>
           <div className="text-[10px] text-slate-400 px-2.5">
-            {isLiveFeed
-              ? `MODE: ${connectionStatus === "live_webrtc" ? "WEBRTC" : "HLS"} · LATENCY: ${streamLatency}MS`
+            {analysisState === "ANALYZING"
+              ? sourceType === "mp4"
+                ? `MP4 · ${mp4File ?? "demo"}`
+                : sourceType === "rtsp"
+                ? "RTSP INPUT ACTIVE"
+                : "WEBCAM INPUT ACTIVE"
               : "NO ACTIVE INPUT"}
           </div>
         </div>
 
-        {/* Live HUD: Top Right Timestamp */}
+        {/* ── HUD: Top Right — timestamp ── */}
         <div className="absolute top-3 right-4 font-mono text-right pointer-events-none z-20">
           <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#071011]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
             <Clock className="w-3 h-3 text-[#19D3C5]" />
             <span>{currentTime}</span>
           </div>
           <div className="text-[10px] text-slate-400 px-2.5 pt-0.5">
-            {isLiveFeed ? "FEED: SOURCE VERIFIED" : "FEED STATUS: STANDBY"}
+            {showLiveHLS || showWebcam ? "FEED: SOURCE VERIFIED" : "FEED STATUS: STANDBY"}
           </div>
         </div>
 
-        {/* Live HUD: Center Subtle Reticle */}
+        {/* ── Reticle ── */}
         <div className="absolute inset-0 m-auto w-12 h-12 border border-[#19D3C5]/20 rounded-full pointer-events-none flex items-center justify-center">
           <div className="w-1.5 h-1.5 bg-[#19D3C5]/40 rounded-full" />
         </div>
 
-        {/* AI Overlays (Detection Bounding Boxes + Zone) */}
+        {/* ── AI Overlays + telemetry ── */}
         {isOnline ? (
           <>
-            {showDetections && (
+            {showDetections && analysisState === "ANALYZING" && (
               <DetectionOverlay
                 showZone={showZone}
                 zoneName="SIMULATED MONITORING ZONE (RESTRICTED)"
@@ -388,10 +505,25 @@ export default function CameraFeed({
               />
             )}
 
-            {/* Bottom Left AI Telemetry */}
-            <div className="absolute bottom-3 left-4 z-20 font-mono text-[10px] text-[#35D07F] flex items-center gap-2 bg-[#071011]/90 px-3 py-1.5 rounded-lg border border-[#35D07F]/30 backdrop-blur-md shadow-lg">
-              <ShieldAlert className="w-3.5 h-3.5 text-[#FF8A2A]" />
-              <span>YOLO + BYTETRACK: 2 ACTIVE TRACKS</span>
+            {/* Analysis telemetry strip at bottom-left */}
+            <div
+              className={`absolute bottom-3 left-4 z-20 font-mono text-[10px] flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-md shadow-lg transition-colors ${
+                analysisState === "ANALYZING"
+                  ? "text-[#35D07F] bg-[#071011]/90 border-[#35D07F]/30"
+                  : "text-slate-500 bg-[#071011]/80 border-white/[0.06]"
+              }`}
+            >
+              {analysisState === "ANALYZING" ? (
+                <>
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#FF8A2A]" />
+                  <span>YOLO + BYTETRACK: ACTIVE</span>
+                </>
+              ) : (
+                <>
+                  <Wifi className="w-3.5 h-3.5" />
+                  <span>{hudInfo.label}</span>
+                </>
+              )}
             </div>
           </>
         ) : (
@@ -405,10 +537,10 @@ export default function CameraFeed({
           </div>
         )}
 
-        {/* Bottom Right Source Tag */}
+        {/* ── Bottom-right source tag ── */}
         <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#071011]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
           <span>SRC: {activeCamera.source}</span>
-          {!isLiveFeed && isOnline && (
+          {!showLiveHLS && !showWebcam && isOnline && (
             <button
               onClick={retryConnection}
               className="text-[#19D3C5] hover:text-[#35D07F] flex items-center gap-1 font-semibold transition-colors"

@@ -101,6 +101,66 @@ export const fetchDetections = (cameraId?: string) => {
   return get<DetectionResult[]>("/api/detections");
 };
 
+// ---------------------------------------------------------------------------
+// Video analysis session API
+// ---------------------------------------------------------------------------
+
+export type VideoSourceType = "mp4" | "rtsp" | "webcam";
+
+export interface StartAnalysisRequest {
+  source_type: VideoSourceType;
+  source_reference: string; // mp4 filename | rtsp:// URL | "webcam"
+  camera_id: string;
+}
+
+export interface StartAnalysisResponse {
+  session_id: string;
+  status: string;
+  camera_id: string;
+  source_type: string;
+  source_reference: string;
+  started_at: string;
+}
+
+export interface SessionStatusResponse {
+  session_id: string;
+  status: string; // "analyzing" | "stopped" | "error"
+  source_type: string;
+  source_reference: string;
+  camera_id: string;
+  started_at: string;
+  stopped_at: string | null;
+  frames_processed: number;
+}
+
+export async function startVideoAnalysis(
+  req: StartAnalysisRequest,
+): Promise<StartAnalysisResponse> {
+  const res = await fetch(`${API}/api/video/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? `startVideoAnalysis failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function stopVideoAnalysis(sessionId: string): Promise<void> {
+  const res = await fetch(`${API}/api/video/stop`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+  if (!res.ok) throw new Error(`stopVideoAnalysis failed: ${res.status}`);
+}
+
+export async function fetchVideoStatus(sessionId: string): Promise<SessionStatusResponse> {
+  return get<SessionStatusResponse>(`/api/video/status/${sessionId}`);
+}
+
 export async function fetchSummary(): Promise<AnalyticsSummary> {
   const raw = await get<Record<string, unknown>>("/api/analytics/summary");
   const by = (raw.alerts_by_severity as Record<string, number> | undefined) ?? {};
