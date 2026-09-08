@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { DashboardLayout } from "./layouts";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Alerts from "./pages/Alerts";
 import AlertDetails from "./pages/AlertDetails";
@@ -16,17 +17,21 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Public Login Route */}
+        {/* Public Hero Landing Page */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/landing" element={<Landing />} />
+
+        {/* Public Operator Login Route */}
         <Route path="/login" element={<Login />} />
 
-        {/* Protected Dashboard Command Center Routes */}
+        {/* Protected Command Center Operations */}
         <Route
           path="/*"
           element={
             <ProtectedRoute>
               <DashboardLayout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/cameras" element={<Cameras />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/alerts/:alertId" element={<AlertDetails />} />
@@ -34,7 +39,7 @@ export default function App() {
                   <Route path="/map" element={<MapPage />} />
                   <Route path="/events" element={<Events />} />
                   <Route path="/analytics" element={<Analytics />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
             </ProtectedRoute>

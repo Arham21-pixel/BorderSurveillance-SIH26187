@@ -14,7 +14,7 @@ interface CameraMapProps {
 // Tactical SVG marker icon generator
 function createTacticalIcon(status: string, isActive: boolean) {
   const isOnline = status === "online";
-  const color = isActive ? "#ff5a5a" : isOnline ? "#3dd6c6" : "#8fa3b8";
+  const color = isActive ? "#ff4d4d" : isOnline ? "#20D5C5" : "#64748b";
   const pulseClass = isOnline ? "animate-pulse" : "";
 
   return L.divIcon({
@@ -30,18 +30,18 @@ function createTacticalIcon(status: string, isActive: boolean) {
       ">
         <div style="
           position: absolute;
-          width: 28px;
-          height: 28px;
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
-          background: ${color}22;
+          background: ${color}20;
           border: 1.5px solid ${color};
         " class="${pulseClass}"></div>
         <div style="
-          width: 10px;
-          height: 10px;
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
           background: ${color};
-          box-shadow: 0 0 8px ${color};
+          box-shadow: 0 0 10px ${color};
         "></div>
       </div>
     `,
@@ -69,17 +69,17 @@ export default function CameraMap({
   return (
     <div
       style={{ height, width: "100%", position: "relative" }}
-      className="rounded-lg overflow-hidden border border-[#243140] leaflet-dark-tiles"
+      className="rounded-xl overflow-hidden border border-white/[0.08] leaflet-dark-tiles"
     >
       <MapContainer
         center={center}
         zoom={DEFAULT_MAP_ZOOM}
         scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%", background: "#0c141c" }}
+        style={{ height: "100%", width: "100%", background: "#080D11" }}
       >
         {/* OpenStreetMap Base Tile Layer with dark theme filter */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={18}
         />
@@ -89,19 +89,18 @@ export default function CameraMap({
           center={DEFAULT_MAP_CENTER}
           radius={2500}
           pathOptions={{
-            color: "#3dd6c6",
-            fillColor: "#3dd6c6",
-            fillOpacity: 0.04,
-            weight: 1,
-            dashArray: "4, 6",
+            color: "#20D5C5",
+            fillColor: "#20D5C5",
+            fillOpacity: 0.05,
+            weight: 1.5,
+            dashArray: "5, 6",
           }}
         />
 
         {/* Camera Markers */}
-        {cameras.map((camera, index) => {
-          // Fallback coordinates around center if lat/lon is null
-          const lat = camera.latitude ?? DEFAULT_MAP_CENTER[0] + (index * 0.012 - 0.01);
-          const lon = camera.longitude ?? DEFAULT_MAP_CENTER[1] + ((index % 2) * 0.02 - 0.01);
+        {cameras.filter((c) => c.latitude != null && c.longitude != null).map((camera) => {
+          const lat = camera.latitude as number;
+          const lon = camera.longitude as number;
           const isActive = camera.id === activeCameraId;
           const icon = createTacticalIcon(camera.status, isActive);
 
@@ -115,22 +114,22 @@ export default function CameraMap({
               }}
             >
               <Popup className="tactical-map-popup">
-                <div className="p-2 min-w-[160px] bg-[#101820] text-[#e8eef5] rounded text-xs font-mono">
-                  <div className="flex items-center justify-between pb-1 border-b border-[#243140] mb-1.5">
-                    <span className="font-bold text-[#3dd6c6]">{camera.name}</span>
+                <div className="p-3 min-w-[170px] bg-[#101820] text-slate-200 rounded-xl text-xs font-sans">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.08] mb-2">
+                    <span className="font-semibold text-white">{camera.name}</span>
                     <span
-                      className={`text-[9px] uppercase px-1 py-0.2 rounded font-bold ${
+                      className={`text-[9px] uppercase px-1.5 py-0.5 rounded-full font-medium ${
                         camera.status === "online"
-                          ? "bg-[#14321c] text-[#5ad67a]"
-                          : "bg-[#2a2a2a] text-[#8fa3b8]"
+                          ? "bg-emerald-500/15 text-[#39D98A]"
+                          : "bg-slate-800 text-slate-400"
                       }`}
                     >
                       {camera.status}
                     </span>
                   </div>
-                  <div className="text-[10px] text-[#8fa3b8] space-y-0.5">
-                    <div>Sector: <span className="text-[#e8eef5] uppercase">{camera.sector}</span></div>
-                    <div>Source: <span className="text-[#e8eef5]">{camera.source}</span></div>
+                  <div className="text-[11px] font-mono text-slate-400 space-y-1">
+                    <div>Sector: <span className="text-white uppercase font-semibold">{camera.sector}</span></div>
+                    <div>Source: <span className="text-slate-300">{camera.source}</span></div>
                     <div>Coords: {lat.toFixed(4)}°N, {lon.toFixed(4)}°E</div>
                   </div>
                 </div>
@@ -141,8 +140,8 @@ export default function CameraMap({
       </MapContainer>
 
       {/* Floating Tactical HUD Info Overlay */}
-      <div className="absolute top-2 right-2 z-[400] bg-[#0c141c]/90 backdrop-blur px-2.5 py-1 rounded border border-[#243140] text-[10px] font-mono text-[#8fa3b8]">
-        SECTOR: <span className="text-[#3dd6c6] font-bold">LADAKH SECTOR 4</span>
+      <div className="absolute top-2.5 right-2.5 z-[400] bg-[#080D11]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/[0.08] text-[11px] font-mono text-slate-400 shadow-lg">
+        SECTOR: <span className="text-[#20D5C5] font-semibold">LADAKH SECTOR 4</span>
       </div>
     </div>
   );

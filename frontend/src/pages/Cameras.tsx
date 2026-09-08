@@ -59,45 +59,45 @@ export default function Cameras() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-7">
       {/* Header & Fleet Telemetry Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#243140]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/40">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-emerald-500/15 text-[#39D98A] border border-emerald-500/25">
               <Radio className="w-3 h-3 animate-pulse" />
-              LIVE SURVEILLANCE FLEET
+              Live Surveillance Fleet
             </span>
-            <span className="text-[11px] font-mono text-[#8fa3b8]">
-              LADAKH SECTOR 4 · LINE OF ACTUAL CONTROL
+            <span className="text-xs font-mono text-slate-400">
+              Ladakh Sector 4 · Line of Actual Control
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#e8eef5]">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
             Live CCTV Feeds & Camera Fleet
           </h1>
-          <p className="text-xs text-[#8fa3b8] mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Real-time multi-camera border streams, spatial perimeter overlays, and AI track telemetry.
           </p>
         </div>
 
         {/* Fleet KPI Badges */}
-        <div className="flex items-center gap-3 font-mono text-xs">
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#243140] flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#5ad67a] animate-ping" />
-            <span className="text-[#5ad67a] font-bold">{onlineCount}</span>
-            <span className="text-[#8fa3b8]">ONLINE</span>
+        <div className="flex items-center gap-3 text-xs">
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[#39D98A] animate-ping" />
+            <span className="text-[#39D98A] font-bold font-mono">{onlineCount}</span>
+            <span className="text-slate-400">Online</span>
           </div>
 
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#243140] flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5a5a]" />
-            <span className="text-[#ff5a5a] font-bold">{offlineCount}</span>
-            <span className="text-[#8fa3b8]">OFFLINE</span>
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            <span className="text-rose-400 font-bold font-mono">{offlineCount}</span>
+            <span className="text-slate-400">Offline</span>
           </div>
 
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#243140] flex items-center gap-2">
-            <Video className="w-4 h-4 text-[#3dd6c6]" />
-            <span className="text-[#e8eef5] font-bold">{cameras.length}</span>
-            <span className="text-[#8fa3b8]">TOTAL</span>
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <Video className="w-4 h-4 text-[#20D5C5]" />
+            <span className="text-white font-bold font-mono">{cameras.length}</span>
+            <span className="text-slate-400">Total</span>
           </div>
         </div>
       </div>
@@ -115,37 +115,37 @@ export default function Cameras() {
 
           {/* Selected Camera Detailed Telemetry Strip */}
           {selectedCamera && (
-            <div className="p-4 rounded-xl bg-[#101820] border border-[#243140] flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+            <div className="p-4 rounded-2xl bg-[#101820] border border-white/[0.07] flex flex-wrap items-center justify-between gap-4 text-xs shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#0c141c] border border-[#243140] text-[#3dd6c6]">
+                <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
                   <Cpu className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[#8fa3b8] text-[10px]">AI PIPELINE</div>
-                  <div className="text-[#e8eef5] font-bold">YOLOv8n + SimpleTracker</div>
+                  <div className="text-slate-400 text-[10px]">AI PIPELINE</div>
+                  <div className="text-slate-200 font-semibold font-mono">YOLOv8n + SimpleTracker</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#0c141c] border border-[#243140] text-[#3dd6c6]">
+                <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
                   <Compass className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[#8fa3b8] text-[10px]">GEOSPATIAL COORDS</div>
-                  <div className="text-[#e8eef5] font-bold">
+                  <div className="text-slate-400 text-[10px]">GEOSPATIAL COORDS</div>
+                  <div className="text-slate-200 font-semibold font-mono">
                     {selectedCamera.latitude ? `${selectedCamera.latitude.toFixed(4)}°N, ${selectedCamera.longitude?.toFixed(4)}°E` : "34.1526°N, 77.5771°E"}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#0c141c] border border-[#243140] text-[#3dd6c6]">
+                <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
                   <Activity className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[#8fa3b8] text-[10px]">THREAT STATUS</div>
-                  <div className={activeAlertsForCamera.length > 0 ? "text-[#ff5a5a] font-bold" : "text-[#5ad67a] font-bold"}>
-                    {activeAlertsForCamera.length > 0 ? `${activeAlertsForCamera.length} ACTIVE ALERTS` : "CLEAR"}
+                  <div className="text-slate-400 text-[10px]">THREAT STATUS</div>
+                  <div className={activeAlertsForCamera.length > 0 ? "text-rose-400 font-semibold font-mono" : "text-[#39D98A] font-semibold font-mono"}>
+                    {activeAlertsForCamera.length > 0 ? `${activeAlertsForCamera.length} Active Alerts` : "Clear"}
                   </div>
                 </div>
               </div>
@@ -154,37 +154,37 @@ export default function Cameras() {
         </div>
 
         {/* Camera List & Filter Sidebar (Col 4) */}
-        <div className="lg:col-span-4 bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5 flex flex-col h-[580px]">
-          <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-            <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-              <Video className="w-4 h-4 text-[#3dd6c6]" />
+        <div className="lg:col-span-4 bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col h-[580px] shadow-xl">
+          <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+            <span className="text-xs font-semibold text-white flex items-center gap-2">
+              <Video className="w-4 h-4 text-[#20D5C5]" />
               Camera Stations ({filteredCameras.length})
             </span>
-            <span className="text-[10px] font-mono text-[#3dd6c6]">
+            <span className="text-[11px] font-mono text-[#20D5C5]">
               {selectedCamera?.name}
             </span>
           </div>
 
           {/* Search Box */}
-          <div className="relative mb-3">
-            <Search className="w-3.5 h-3.5 text-[#8fa3b8] absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative mb-3.5">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search station or sector..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] placeholder-[#8fa3b8]/50 focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#20D5C5]/50 transition-colors"
             />
           </div>
 
           {/* Sector Filter Chips */}
-          <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 text-[10px] font-mono scrollbar-none">
+          <div className="flex items-center gap-1.5 mb-3.5 overflow-x-auto pb-1 text-xs scrollbar-none">
             <button
               onClick={() => setSectorFilter("all")}
-              className={`px-2.5 py-1 rounded transition-colors uppercase ${
+              className={`px-3 py-1 rounded-lg transition-colors capitalize text-xs ${
                 sectorFilter === "all"
-                  ? "bg-[#16202b] text-[#3dd6c6] border border-[#3dd6c6]/40 font-bold"
-                  : "bg-[#0c141c] text-[#8fa3b8] hover:text-[#e8eef5] border border-[#243140]"
+                  ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 font-semibold"
+                  : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
               }`}
             >
               All
@@ -193,10 +193,10 @@ export default function Cameras() {
               <button
                 key={s}
                 onClick={() => setSectorFilter(s)}
-                className={`px-2.5 py-1 rounded transition-colors uppercase whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg transition-colors capitalize whitespace-nowrap text-xs ${
                   sectorFilter === s
-                    ? "bg-[#16202b] text-[#3dd6c6] border border-[#3dd6c6]/40 font-bold"
-                    : "bg-[#0c141c] text-[#8fa3b8] hover:text-[#e8eef5] border border-[#243140]"
+                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 font-semibold"
+                    : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
                 }`}
               >
                 {s}
@@ -217,50 +217,50 @@ export default function Cameras() {
                 <div
                   key={camera.id}
                   onClick={() => setSelectedCameraId(camera.id)}
-                  className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#16202b] border-[#3dd6c6]/60 shadow-md shadow-[#3dd6c6]/10"
-                      : "bg-[#0c141c] border-[#243140] hover:border-[#3dd6c6]/30 hover:bg-[#101820]"
+                      ? "bg-[#141E28] border-[#20D5C5]/40 shadow-lg shadow-black/30"
+                      : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04]"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          isOnline ? "bg-[#5ad67a] animate-pulse" : "bg-[#ff5a5a]"
+                          isOnline ? "bg-[#39D98A] animate-pulse" : "bg-rose-500"
                         }`}
                       />
-                      <span className="text-xs font-bold text-[#e8eef5]">
+                      <span className="text-xs font-semibold text-white">
                         {camera.name}
                       </span>
                     </div>
 
                     <span
-                      className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
+                      className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${
                         isOnline
-                          ? "bg-[#14321c] text-[#5ad67a]"
-                          : "bg-[#2a2a2a] text-[#8fa3b8]"
+                          ? "bg-emerald-500/10 text-[#39D98A] border-emerald-500/25"
+                          : "bg-slate-800 text-slate-400 border-slate-700"
                       }`}
                     >
                       {camera.status}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-mono text-[#8fa3b8] mt-2">
-                    <span className="flex items-center gap-1 uppercase">
-                      <Compass className="w-3 h-3 text-[#3dd6c6]" />
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mt-2">
+                    <span className="flex items-center gap-1 capitalize">
+                      <Compass className="w-3 h-3 text-[#20D5C5]" />
                       Sector: {camera.sector}
                     </span>
                     <span>Src: {camera.source}</span>
                   </div>
 
                   {camAlerts.length > 0 && (
-                    <div className="mt-2 pt-1.5 border-t border-[#243140]/60 flex items-center justify-between text-[10px] font-mono text-[#ff5a5a]">
-                      <span className="flex items-center gap-1">
+                    <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-rose-400">
+                      <span className="flex items-center gap-1 font-medium">
                         <AlertTriangle className="w-3 h-3" />
                         {camAlerts.length} Unacknowledged Alert
                       </span>
-                      <span className="underline">Focus Feed →</span>
+                      <span className="font-semibold underline">Focus Feed →</span>
                     </div>
                   )}
                 </div>
@@ -271,13 +271,13 @@ export default function Cameras() {
       </div>
 
       {/* Multi-Camera Mosaic Overview Grid */}
-      <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-        <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-4">
-          <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-            <Video className="w-4 h-4 text-[#3dd6c6]" />
+      <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-xl">
+        <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+          <span className="text-xs font-semibold text-white flex items-center gap-2">
+            <Video className="w-4 h-4 text-[#20D5C5]" />
             Multi-Camera Mosaic Grid (Click to focus primary stage)
           </span>
-          <span className="text-xs font-mono text-[#8fa3b8]">
+          <span className="text-xs font-mono text-slate-400">
             3 STATIONS ACTIVE
           </span>
         </div>
@@ -290,38 +290,38 @@ export default function Cameras() {
               <div
                 key={c.id}
                 onClick={() => setSelectedCameraId(c.id)}
-                className={`group rounded-lg overflow-hidden border transition-all cursor-pointer bg-[#0c141c] ${
+                className={`group rounded-xl overflow-hidden border transition-all cursor-pointer bg-[#080D11] ${
                   isSelected
-                    ? "border-[#3dd6c6] ring-1 ring-[#3dd6c6]"
-                    : "border-[#243140] hover:border-[#3dd6c6]/50"
+                    ? "border-[#20D5C5] ring-1 ring-[#20D5C5] shadow-lg shadow-[#20D5C5]/10"
+                    : "border-white/[0.07] hover:border-white/[0.18]"
                 }`}
               >
                 {/* Mini Preview Header */}
-                <div className="p-2.5 bg-[#101820] border-b border-[#243140] flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-1.5 font-bold text-[#e8eef5]">
+                <div className="p-3 bg-[#101820] border-b border-white/[0.06] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-white">
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        isOnline ? "bg-[#5ad67a]" : "bg-[#ff5a5a]"
+                        isOnline ? "bg-[#39D98A]" : "bg-rose-500"
                       }`}
                     />
                     <span>{c.name}</span>
                   </div>
-                  <span className="text-[10px] text-[#8fa3b8] uppercase">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase">
                     {c.sector}
                   </span>
                 </div>
 
                 {/* Simulated Mini Viewport */}
-                <div className="aspect-video relative bg-[#070b10] flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3dd6c6_1px,transparent_1px)] [background-size:12px_12px]" />
-                  <div className="absolute top-2 left-2 text-[9px] font-mono text-[#3dd6c6] bg-[#0c141c]/80 px-1.5 py-0.5 rounded">
+                <div className="aspect-video relative bg-[#080D11] flex items-center justify-center overflow-hidden">
+                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#20D5C5_1px,transparent_1px)] [background-size:12px_12px]" />
+                  <div className="absolute top-2 left-2 text-[9px] font-mono text-[#20D5C5] bg-[#080D11]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
                     {c.id}
                   </div>
-                  <div className="text-center font-mono text-[11px] text-[#8fa3b8] flex flex-col items-center gap-1">
-                    <Video className="w-5 h-5 group-hover:text-[#3dd6c6] transition-colors" />
-                    <span>{isOnline ? "30 FPS LIVE STREAM" : "SIGNAL OFFLINE"}</span>
+                  <div className="text-center text-xs text-slate-400 flex flex-col items-center gap-1.5">
+                    <Video className="w-5 h-5 group-hover:text-[#20D5C5] transition-colors" />
+                    <span className="font-mono text-[10px]">{isOnline ? "30 FPS LIVE STREAM" : "SIGNAL OFFLINE"}</span>
                   </div>
-                  <div className="absolute bottom-2 right-2 text-[9px] font-mono text-[#8fa3b8] bg-[#0c141c]/80 px-1.5 py-0.5 rounded">
+                  <div className="absolute bottom-2 right-2 text-[9px] font-mono text-slate-500 bg-[#080D11]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
                     SRC: {c.source}
                   </div>
                 </div>

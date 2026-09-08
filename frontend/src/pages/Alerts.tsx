@@ -152,54 +152,54 @@ export default function Alerts() {
   const openCount = alerts.filter((a) => a.status === "open").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-7">
       {/* Alert Center Header & KPI Counters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#243140]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-[#3a1212] text-[#ff4d4d] border border-[#ff4d4d]/40">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-rose-500/15 text-rose-400 border border-rose-500/25">
               <AlertOctagon className="w-3 h-3 animate-pulse" />
-              TACTICAL INCIDENT MANAGEMENT
+              Tactical Incident Management
             </span>
-            <span className="text-[11px] font-mono text-[#8fa3b8]">
-              NORTHERN DEFENSE SECTOR 4
+            <span className="text-xs font-mono text-slate-400">
+              Northern Defense Sector 4
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#e8eef5]">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
             Perimeter Security Alert Center
           </h1>
-          <p className="text-xs text-[#8fa3b8] mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Multi-tier incident triage queue with autonomous risk scoring and evidence audit correlation.
           </p>
         </div>
 
         {/* Severity Counters */}
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#ff4d4d]/30 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff4d4d] animate-ping" />
-            <span className="text-[#ff4d4d] font-bold">{criticalCount}</span>
-            <span className="text-[#8fa3b8]">CRITICAL</span>
+        <div className="flex items-center gap-2.5 text-xs">
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <span className="text-rose-400 font-bold font-mono">{criticalCount}</span>
+            <span className="text-slate-400">Critical</span>
           </div>
 
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#ff5a5a]/30 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5a5a]" />
-            <span className="text-[#ff5a5a] font-bold">{highCount}</span>
-            <span className="text-[#8fa3b8]">HIGH</span>
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-orange-500" />
+            <span className="text-orange-400 font-bold font-mono">{highCount}</span>
+            <span className="text-slate-400">High</span>
           </div>
 
-          <div className="px-3 py-2 rounded-lg bg-[#101820] border border-[#243140] flex items-center gap-2">
-            <span className="text-[#3dd6c6] font-bold">{openCount}</span>
-            <span className="text-[#8fa3b8]">TOTAL OPEN</span>
+          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
+            <span className="text-[#20D5C5] font-bold font-mono">{openCount}</span>
+            <span className="text-slate-400">Total Open</span>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="p-4 rounded-xl bg-[#101820] border border-[#243140] space-y-3 font-mono text-xs">
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#101820] border border-white/[0.07] space-y-3.5 text-xs shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Keyword Search Input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-[#8fa3b8] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
@@ -208,13 +208,13 @@ export default function Alerts() {
                 setCurrentPage(1);
               }}
               placeholder="Search alert reason, camera, track ID..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] placeholder-[#8fa3b8]/50 focus:outline-none focus:border-[#3dd6c6]"
+              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#20D5C5]/50 transition-colors"
             />
           </div>
 
           {/* Severity Quick-Filter Buttons */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[10px]">
-            <span className="text-[#8fa3b8] mr-1 hidden sm:inline">SEVERITY:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+            <span className="text-slate-400 mr-1 hidden sm:inline">Severity:</span>
             {["ALL", "CRITICAL", "HIGH", "SUSPICIOUS", "NORMAL"].map((sev) => {
               const isSelected = severityFilter === sev;
               return (
@@ -224,18 +224,18 @@ export default function Alerts() {
                     setSeverityFilter(sev);
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1.5 rounded-md border font-bold uppercase transition-all whitespace-nowrap ${
+                  className={`px-3 py-1 rounded-lg border font-medium uppercase transition-all whitespace-nowrap text-xs ${
                     isSelected
                       ? sev === "CRITICAL"
-                        ? "bg-[#3a1212] text-[#ff4d4d] border-[#ff4d4d]"
+                        ? "bg-rose-500/15 text-rose-400 border-rose-500/40 font-semibold"
                         : sev === "HIGH"
-                        ? "bg-[#3a1515] text-[#ff5a5a] border-[#ff5a5a]"
+                        ? "bg-orange-500/15 text-orange-400 border-orange-500/40 font-semibold"
                         : sev === "SUSPICIOUS"
-                        ? "bg-[#3a2e12] text-[#f5b942] border-[#f5b942]"
+                        ? "bg-amber-500/15 text-amber-400 border-amber-500/40 font-semibold"
                         : sev === "NORMAL"
-                        ? "bg-[#14321c] text-[#5ad67a] border-[#5ad67a]"
-                        : "bg-[#16202b] text-[#3dd6c6] border-[#3dd6c6]"
-                      : "bg-[#0c141c] text-[#8fa3b8] border-[#243140] hover:text-[#e8eef5]"
+                        ? "bg-emerald-500/15 text-[#39D98A] border-emerald-500/40 font-semibold"
+                        : "bg-[#20D5C5]/15 text-[#20D5C5] border-[#20D5C5]/40 font-semibold"
+                      : "bg-white/[0.02] text-slate-400 border-white/[0.06] hover:text-white"
                   }`}
                 >
                   {sev}
@@ -246,23 +246,23 @@ export default function Alerts() {
         </div>
 
         {/* Secondary Filters: Camera, Status, Sorting */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#243140]/60 text-[11px]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.05] text-xs">
           <div className="flex flex-wrap items-center gap-3">
             {/* Camera Dropdown */}
             <div className="flex items-center gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-[#3dd6c6]" />
-              <span className="text-[#8fa3b8]">Camera:</span>
+              <Camera className="w-3.5 h-3.5 text-[#20D5C5]" />
+              <span className="text-slate-400">Camera:</span>
               <select
                 value={cameraFilter}
                 onChange={(e) => {
                   setCameraFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-[#0c141c] border border-[#243140] rounded px-2 py-1 text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6]"
+                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
               >
-                <option value="ALL">All Stations</option>
+                <option value="ALL" className="bg-[#101820]">All Stations</option>
                 {cameras.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} className="bg-[#101820]">
                     {c.name} ({c.id})
                   </option>
                 ))}
@@ -271,35 +271,35 @@ export default function Alerts() {
 
             {/* Status Dropdown */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[#8fa3b8]">Status:</span>
+              <span className="text-slate-400">Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-[#0c141c] border border-[#243140] rounded px-2 py-1 text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6]"
+                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
               >
-                <option value="ALL">All Statuses</option>
-                <option value="open">Open Only</option>
-                <option value="acknowledged">Acknowledged Only</option>
+                <option value="ALL" className="bg-[#101820]">All Statuses</option>
+                <option value="open" className="bg-[#101820]">Open Only</option>
+                <option value="acknowledged" className="bg-[#101820]">Acknowledged Only</option>
               </select>
             </div>
           </div>
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#3dd6c6]" />
-            <span className="text-[#8fa3b8]">Sort By:</span>
+            <ArrowUpDown className="w-3.5 h-3.5 text-[#20D5C5]" />
+            <span className="text-slate-400">Sort By:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="bg-[#0c141c] border border-[#243140] rounded px-2 py-1 text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6]"
+              className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="risk_desc">Highest Risk Score</option>
-              <option value="severity_desc">Highest Severity</option>
+              <option value="newest" className="bg-[#101820]">Newest First</option>
+              <option value="oldest" className="bg-[#101820]">Oldest First</option>
+              <option value="risk_desc" className="bg-[#101820]">Highest Risk Score</option>
+              <option value="severity_desc" className="bg-[#101820]">Highest Severity</option>
             </select>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function Alerts() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Alerts List Column (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between text-xs font-mono text-[#8fa3b8] px-1">
+          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
             <span>
               Showing {paginatedAlerts.length} of {processedAlerts.length} filtered incidents
             </span>
@@ -317,7 +317,7 @@ export default function Alerts() {
           </div>
 
           {paginatedAlerts.length === 0 ? (
-            <div className="p-12 text-center bg-[#101820] border border-[#243140] rounded-xl text-[#8fa3b8] font-mono text-xs">
+            <div className="p-12 text-center bg-[#101820] border border-white/[0.07] rounded-2xl text-slate-400 text-xs">
               No security alerts match the current filter criteria.
             </div>
           ) : (
@@ -336,11 +336,11 @@ export default function Alerts() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 border-t border-[#243140] font-mono text-xs">
+            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 rounded bg-[#101820] border border-[#243140] text-[#e8eef5] hover:bg-[#16202b] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-300 hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
@@ -353,10 +353,10 @@ export default function Alerts() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 rounded text-xs font-mono flex items-center justify-center transition-colors ${
+                      className={`w-7 h-7 rounded-lg text-xs font-mono flex items-center justify-center transition-colors ${
                         currentPage === pageNum
-                          ? "bg-[#3dd6c6] text-[#06221f] font-bold"
-                          : "bg-[#101820] text-[#8fa3b8] hover:text-[#e8eef5] border border-[#243140]"
+                          ? "bg-[#20D5C5] text-[#080D11] font-bold shadow-sm shadow-[#20D5C5]/30"
+                          : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
                       }`}
                     >
                       {pageNum}
@@ -368,7 +368,7 @@ export default function Alerts() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 rounded bg-[#101820] border border-[#243140] text-[#e8eef5] hover:bg-[#16202b] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-300 hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
@@ -380,26 +380,26 @@ export default function Alerts() {
         {/* Selected Alert Quick-Inspector Column (5 Cols) */}
         <div className="lg:col-span-5 space-y-5">
           {selectedAlert ? (
-            <div className="bg-[#101820] border border-[#243140] rounded-xl p-5 space-y-4 sticky top-20">
+            <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-4 sticky top-20 shadow-xl">
               {/* Header */}
-              <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#243140]">
+              <div className="flex items-start justify-between gap-3 pb-3.5 border-b border-white/[0.06]">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <RiskBadge severity={selectedAlert.severity} size="md" />
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0c141c] border border-[#243140] text-[#e8eef5]">
-                      RISK SCORE: <span className="text-[#ff5a5a] font-bold">{((selectedAlert.risk_score ?? 0.88) * 100).toFixed(0)}%</span>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-300">
+                      RISK SCORE: <span className="text-rose-400 font-bold">{((selectedAlert.risk_score ?? 0.88) * 100).toFixed(0)}%</span>
                     </span>
                   </div>
-                  <h2 className="text-base font-bold text-[#e8eef5]">
+                  <h2 className="text-base font-semibold text-white">
                     {selectedAlert.title}
                   </h2>
                 </div>
 
                 <span
-                  className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded ${
+                  className={`text-[10px] font-medium uppercase px-2.5 py-0.5 rounded-full border ${
                     selectedAlert.status === "open"
-                      ? "bg-[#3a1515] text-[#ff5a5a] border border-[#ff5a5a]/40"
-                      : "bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/40"
+                      ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                      : "bg-emerald-500/10 text-[#39D98A] border-emerald-500/20"
                   }`}
                 >
                   {selectedAlert.status}
@@ -407,49 +407,49 @@ export default function Alerts() {
               </div>
 
               {/* Reason Summary Box */}
-              <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140] text-xs">
-                <div className="text-[10px] font-mono text-[#3dd6c6] font-bold uppercase mb-1">
-                  Autonomous Risk Assessment Reason:
+              <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs">
+                <div className="text-[10px] font-mono text-[#20D5C5] font-semibold uppercase mb-1">
+                  Autonomous Risk Assessment:
                 </div>
-                <p className="text-[#e8eef5] leading-relaxed">
+                <p className="text-slate-300 leading-relaxed">
                   {selectedAlert.reason || selectedAlert.description}
                 </p>
               </div>
 
               {/* Metadata Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-                  <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1">
-                    <Camera className="w-3 h-3 text-[#3dd6c6]" />
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Camera className="w-3 h-3 text-[#20D5C5]" />
                     CAMERA
                   </div>
-                  <div className="font-bold text-[#e8eef5] mt-1">{selectedAlert.camera_id}</div>
+                  <div className="font-semibold text-white mt-1">{selectedAlert.camera_id}</div>
                 </div>
 
-                <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-                  <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1">
-                    <Activity className="w-3 h-3 text-[#f5b942]" />
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-amber-400" />
                     EVENT TYPE
                   </div>
-                  <div className="font-bold text-[#e8eef5] mt-1 uppercase">
+                  <div className="font-semibold text-white mt-1 uppercase">
                     {selectedAlert.event_type || "ZONE_INTRUSION"}
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-                  <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#3dd6c6]" />
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[#20D5C5]" />
                     TIME
                   </div>
-                  <div className="font-bold text-[#e8eef5] mt-1">{formatTime(selectedAlert.timestamp)}</div>
+                  <div className="font-semibold text-white mt-1">{formatTime(selectedAlert.timestamp)}</div>
                 </div>
 
-                <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-                  <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-[#5ad67a]" />
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#39D98A]" />
                     EVIDENCE
                   </div>
-                  <div className="font-bold text-[#5ad67a] mt-1">
+                  <div className="font-semibold text-[#39D98A] mt-1">
                     {selectedAlert.evidence_path ? "SNAPSHOT READY" : "NONE"}
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export default function Alerts() {
 
               {/* Attached Evidence Viewer Component */}
               <div className="space-y-1.5">
-                <div className="text-[10px] font-mono text-[#8fa3b8] uppercase font-bold">
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
                   Forensic Media Attachment:
                 </div>
                 <EvidenceViewer path={selectedAlert.evidence_path} />
@@ -467,7 +467,7 @@ export default function Alerts() {
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   onClick={() => setShowDetailsModal(true)}
-                  className="w-full py-2 px-3 rounded-lg bg-[#16202b] hover:bg-[#243140] text-[#3dd6c6] border border-[#3dd6c6]/40 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-[#20D5C5] border border-white/[0.08] text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Open Incident Dossier & Controls</span>
@@ -477,22 +477,22 @@ export default function Alerts() {
                   {selectedAlert.status === "open" ? (
                     <button
                       onClick={() => handleAcknowledge(selectedAlert.id)}
-                      className="flex-1 py-2 px-3 rounded-lg bg-[#3dd6c6] text-[#06221f] font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#3dd6c6]/90 transition-all shadow-lg shadow-[#3dd6c6]/10"
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#20D5C5] hover:bg-[#39D98A] text-[#080D11] text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#20D5C5]/20"
                     >
                       <Check className="w-4 h-4" />
                       <span>Acknowledge</span>
                     </button>
                   ) : (
-                    <div className="flex-1 py-2 px-3 rounded-lg bg-[#14321c] border border-[#5ad67a]/40 text-[#5ad67a] text-center font-mono text-xs font-bold flex items-center justify-center gap-1.5">
+                    <div className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[#39D98A] text-center text-xs font-semibold flex items-center justify-center gap-1.5">
                       <Check className="w-4 h-4" />
-                      <span>ACKNOWLEDGED</span>
+                      <span>Acknowledged</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center bg-[#101820] border border-[#243140] rounded-xl text-[#8fa3b8] font-mono text-xs">
+            <div className="p-8 text-center bg-[#101820] border border-white/[0.07] rounded-2xl text-slate-400 text-xs">
               Select an alert from the queue to inspect full telemetry.
             </div>
           )}

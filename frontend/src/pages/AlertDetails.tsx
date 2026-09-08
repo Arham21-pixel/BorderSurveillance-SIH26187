@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAlerts } from "../hooks/useAlerts";
 import RiskBadge from "../components/RiskBadge";
 import EvidenceViewer from "../components/EvidenceViewer";
+import RiskBreakdown from "../components/RiskBreakdown";
 import { ackAlert } from "../services/api";
 import { formatTime } from "../utils/formatters";
 import {
@@ -154,6 +155,9 @@ export default function AlertDetails() {
             <div className="text-[#3dd6c6]">INTELLIGENCE.RISK_ENGINE CLASSIFIED</div>
           </div>
         </div>
+
+        {/* Contributing Signal Breakdown (Positive & Negative contributors) */}
+        <RiskBreakdown breakdown={alert.risk_breakdown} />
 
         {/* Explanation / Reason Section */}
         <div className="p-4 rounded-xl bg-[#16202b]/60 border border-[#243140] space-y-2">

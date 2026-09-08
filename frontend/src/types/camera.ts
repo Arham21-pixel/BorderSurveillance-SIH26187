@@ -7,4 +7,7 @@ export type Camera = {
   sector: string;
   status: string;
   last_seen?: string | null;
+  stream_url?: string | null;
+  webrtc_url?: string | null;
+  hls_url?: string | null;
 };

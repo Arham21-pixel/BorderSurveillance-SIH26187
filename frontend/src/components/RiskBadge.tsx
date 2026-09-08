@@ -15,24 +15,34 @@ export default function RiskBadge({ severity, size = "sm" }: RiskBadgeProps) {
   const norm = normalizeSeverity(severity);
 
   const styleMap = {
-    CRITICAL: "bg-[#3a1212] text-[#ff4d4d] border-[#ff4d4d]/50",
-    HIGH: "bg-[#3a1515] text-[#ff5a5a] border-[#ff5a5a]/40",
-    SUSPICIOUS: "bg-[#3a2e12] text-[#f5b942] border-[#f5b942]/40",
-    NORMAL: "bg-[#14321c] text-[#5ad67a] border-[#5ad67a]/40",
+    CRITICAL: "bg-rose-500/10 text-rose-400 border-rose-500/25",
+    HIGH: "bg-orange-500/10 text-orange-400 border-orange-500/25",
+    SUSPICIOUS: "bg-amber-500/10 text-amber-400 border-amber-500/25",
+    NORMAL: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
+  };
+
+  const dotMap = {
+    CRITICAL: "bg-rose-400 animate-pulse",
+    HIGH: "bg-orange-400",
+    SUSPICIOUS: "bg-amber-400",
+    NORMAL: "bg-emerald-400",
+  };
+
+  const labelMap = {
+    CRITICAL: "Critical",
+    HIGH: "High",
+    SUSPICIOUS: "Medium",
+    NORMAL: "Normal",
   };
 
   const sizeClasses = size === "md" ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]";
 
   return (
     <span
-      className={`inline-flex items-center font-mono font-bold uppercase rounded border tracking-wider ${styleMap[norm]} ${sizeClasses}`}
+      className={`inline-flex items-center font-medium rounded-full border tracking-normal ${styleMap[norm]} ${sizeClasses}`}
     >
-      <span
-        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-          norm === "CRITICAL" ? "bg-[#ff4d4d] animate-ping" : norm === "HIGH" ? "bg-[#ff5a5a]" : norm === "SUSPICIOUS" ? "bg-[#f5b942]" : "bg-[#5ad67a]"
-        }`}
-      />
-      {norm}
+      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotMap[norm]}`} />
+      {labelMap[norm]}
     </span>
   );
 }

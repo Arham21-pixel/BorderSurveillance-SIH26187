@@ -6,4 +6,6 @@ export type EventItem = {
   description: string;
   risk_score: number;
   timestamp: string;
+  zone?: string;
+  evidence_path?: string | null;
 };

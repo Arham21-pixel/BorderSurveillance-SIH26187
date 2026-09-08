@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RiskBadge from "./RiskBadge";
 import EvidenceViewer from "./EvidenceViewer";
+import RiskBreakdown from "./RiskBreakdown";
 import type { Alert } from "../types/alert";
 import { formatTime } from "../utils/formatters";
 import { ackAlert } from "../services/api";
@@ -141,6 +142,9 @@ export default function AlertDetailsModal({
               <div className="text-[#3dd6c6]">COMPUTED VIA FEATURE VECTOR</div>
             </div>
           </div>
+
+          {/* Contributing Signal Breakdown (Positive & Negative Contributors) */}
+          <RiskBreakdown breakdown={alert.risk_breakdown} />
 
           {/* Explanation / Reason Narrative Section */}
           <div className="p-4 rounded-xl bg-[#16202b]/60 border border-[#243140] space-y-2">
