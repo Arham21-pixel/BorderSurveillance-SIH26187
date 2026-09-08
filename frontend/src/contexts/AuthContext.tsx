@@ -21,6 +21,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const DEMO_STORAGE_KEY = "sentinel_auth_session";
+const DEMO_EMAIL = "operator@sentinel.in";
+const DEMO_PASSWORD = "sentinel2026";
+const ALLOW_DEMO_WITH_SUPABASE = import.meta.env.VITE_ALLOW_DEMO_LOGIN === "true";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -40,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser({
               id: data.session.user.id,
               email: data.session.user.email || "operator@sentinel.in",
-              role: data.session.user.user_metadata?.role || "Tactical Operator",
+              role: data.session.user.user_metadata?.role || "Operator",
               name: data.session.user.user_metadata?.name || "Capt. V. Sharma",
             });
           }
@@ -57,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser({
               id: newSession.user.id,
               email: newSession.user.email || "operator@sentinel.in",
-              role: newSession.user.user_metadata?.role || "Tactical Operator",
+              role: newSession.user.user_metadata?.role || "Operator",
               name: newSession.user.user_metadata?.name || "Capt. V. Sharma",
             });
           } else {
@@ -100,6 +103,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (error) {
+          // Hackathon/dev fallback: allow the standard demo credentials even
+          // when Supabase auth is enabled, so backend verification can proceed.
+          if (ALLOW_DEMO_WITH_SUPABASE && email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+            const demoUser: AuthUser = {
+              id: "op-402-local",
+              email,
+              role: "Operator",
+              name: "Operator #402",
+            };
+            localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoUser));
+            setUser(demoUser);
+            setIsLoading(false);
+            return { error: null };
+          }
           setIsLoading(false);
           return { error: error.message };
         }
@@ -108,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: data.user.id,
             email: data.user.email || email,
-            role: data.user.user_metadata?.role || "Tactical Operator",
+            role: data.user.user_metadata?.role || "Operator",
             name: data.user.user_metadata?.name || "Capt. V. Sharma",
           });
         }
@@ -132,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const demoUser: AuthUser = {
           id: "op-402-local",
           email,
-          role: "Tactical Operator",
+          role: "Operator",
           name: email.includes("capt") ? "Capt. V. Sharma" : "Operator #402",
         };
 

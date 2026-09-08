@@ -126,20 +126,20 @@ export default function AlertDetailsModal({
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase text-[#8fa3b8]">
-                  Autonomous Risk Assessment (Backend Risk Engine Score)
+                  Contextual Risk Assessment (Backend Risk Engine Score)
                 </div>
                 <div className="text-xl font-bold text-[#e8eef5] font-mono">
                   {displayScore.toFixed(2)}{" "}
                   <span className="text-xs text-[#8fa3b8] font-normal">/ 1.00</span>
                   <span className="ml-3 text-xs px-2 py-0.5 rounded bg-[#3a1515] text-[#ff5a5a] font-bold">
-                    {(displayScore * 100).toFixed(0)}% THREAT INDEX
+                    {(displayScore * 100).toFixed(0)}% RISK SCORE
                   </span>
                 </div>
               </div>
             </div>
             <div className="text-[10px] font-mono text-[#8fa3b8] sm:text-right">
-              <div>ENGINE: INTELLIGENCE.RISK_ENGINE</div>
-              <div className="text-[#3dd6c6]">COMPUTED VIA FEATURE VECTOR</div>
+              <div>ENGINE: AI_ANALYTICS_ENGINE</div>
+              <div className="text-[#3dd6c6]">COMPUTED VIA CONTEXTUAL SCORING</div>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ export default function AlertDetailsModal({
           <div className="p-4 rounded-xl bg-[#16202b]/60 border border-[#243140] space-y-2">
             <div className="text-xs font-mono font-bold text-[#3dd6c6] uppercase tracking-wider flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4" />
-              Incident Explanation & Forensic Rationale
+              Incident Explanation & Risk Context
             </div>
             <p className="text-xs sm:text-sm text-[#e8eef5] leading-relaxed">
               {alert.reason || alert.description}
@@ -165,7 +165,7 @@ export default function AlertDetailsModal({
                 CAMERA STATION
               </div>
               <div className="font-bold text-[#e8eef5] mt-1">{alert.camera_id}</div>
-              <div className="text-[10px] text-[#3dd6c6] mt-0.5">Northern Command</div>
+              <div className="text-[10px] text-[#3dd6c6] mt-0.5">Demo Sector</div>
             </div>
 
             <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140]">
@@ -176,7 +176,7 @@ export default function AlertDetailsModal({
               <div className="font-bold text-[#e8eef5] mt-1 uppercase">
                 {alert.event_type || "ZONE_INTRUSION"}
               </div>
-              <div className="text-[10px] text-[#8fa3b8] mt-0.5">Automated Event Class</div>
+              <div className="text-[10px] text-[#8fa3b8] mt-0.5">Event classification</div>
             </div>
 
             <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140]">
@@ -196,18 +196,18 @@ export default function AlertDetailsModal({
               <div className="font-bold text-[#e8eef5] mt-1">
                 {alert.track_id !== undefined ? `TRACK #${alert.track_id}` : "TRK #1"}
               </div>
-              <div className="text-[10px] text-[#8fa3b8] mt-0.5">B-SORT Tracker</div>
+              <div className="text-[10px] text-[#8fa3b8] mt-0.5">ByteTrack</div>
             </div>
 
             <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140]">
               <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5 text-[#ff5a5a]" />
-                DEFENSE ZONE
+                MONITORING ZONE
               </div>
               <div className="font-bold text-[#e8eef5] mt-1 truncate">
                 {alert.zone || "Zone 1: Inner Exclusion Belt"}
               </div>
-              <div className="text-[10px] text-[#ff5a5a] mt-0.5">Restricted Military Area</div>
+              <div className="text-[10px] text-[#ff5a5a] mt-0.5">Simulated Monitoring Zone</div>
             </div>
 
             <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140]">
@@ -218,7 +218,7 @@ export default function AlertDetailsModal({
               <div className="font-bold text-[#5ad67a] mt-1">
                 {alert.evidence_path ? "SNAPSHOT ATTACHED" : "LOG RECORDED"}
               </div>
-              <div className="text-[10px] text-[#8fa3b8] mt-0.5">SHA-256 Validated</div>
+              <div className="text-[10px] text-[#8fa3b8] mt-0.5">Source verified</div>
             </div>
           </div>
 
@@ -229,7 +229,7 @@ export default function AlertDetailsModal({
               Target Trajectory & Kinematic Vector:
             </div>
             <div className="text-[#e8eef5] leading-relaxed">
-              {alert.trajectory || "Heading 185° South at 1.4 m/s from coordinates [34.1534°N, 77.5765°E] towards physical perimeter barrier."}
+              {alert.trajectory || "Heading south-east toward restricted zone boundary in simulated sector map."}
             </div>
           </div>
 
@@ -259,8 +259,8 @@ export default function AlertDetailsModal({
               >
                 <option value="open">Open (Unacknowledged)</option>
                 <option value="acknowledged">Acknowledged (Review in progress)</option>
-                <option value="escalated">Escalated (QRF / BSF Dispatched)</option>
-                <option value="resolved">Resolved (Perimeter secured)</option>
+                <option value="escalated">Escalated (Field team informed)</option>
+                <option value="resolved">Resolved (Area secured)</option>
                 <option value="false_positive">False Positive (Animal / Sensor glitch)</option>
               </select>
             </div>

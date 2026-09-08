@@ -15,10 +15,10 @@ export default function Evidence() {
     <div className="space-y-6 sm:space-y-7">
       <div className="pb-4 border-b border-white/[0.06]">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-          Evidence & Forensic Archive
+          Evidence Archive
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Cryptographically referenced snapshot captures and video event clips tied to border security alerts.
+          Event snapshots, short clips, trajectories and metadata linked to alerts.
         </p>
       </div>
 
@@ -28,7 +28,7 @@ export default function Evidence() {
           <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
             <span className="text-xs font-semibold text-white flex items-center gap-2">
               <FileSearch className="w-4 h-4 text-[#20D5C5]" />
-              Archived Packages ({alerts.length})
+              Archived Evidence ({alerts.length})
             </span>
           </div>
 
@@ -36,9 +36,9 @@ export default function Evidence() {
             {alerts.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 flex flex-col items-center justify-center h-full">
                 <FileSearch className="w-8 h-8 text-slate-600 mb-2" />
-                <span className="font-medium text-slate-300">No evidence packages archived.</span>
+                <span className="font-medium text-slate-300">No evidence archived.</span>
                 <span className="text-[11px] text-slate-500 mt-1">
-                  Incident clips and snapshots will populate as security events occur.
+                  Event clips and snapshots will populate as alerts are generated.
                 </span>
               </div>
             ) : (
@@ -93,7 +93,7 @@ export default function Evidence() {
                 <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                     <Video className="w-4 h-4 text-[#20D5C5]" />
-                    Incident Telemetry Record
+                    Event Evidence Record
                   </h3>
                   <span className="text-xs font-mono text-slate-400">
                     ID: {selectedAlert.id}
@@ -128,9 +128,9 @@ export default function Evidence() {
           ) : (
             <div className="h-[400px] flex flex-col items-center justify-center p-8 bg-[#101820] border border-white/[0.07] rounded-2xl text-center text-xs text-slate-400 shadow-xl">
               <Video className="w-12 h-12 text-slate-600 mb-3" />
-              <div className="text-sm font-semibold text-white">No Forensic Evidence Selected</div>
+              <div className="text-sm font-semibold text-white">No Evidence Selected</div>
               <div className="text-[11px] text-slate-500 mt-1 max-w-sm">
-                Select an archived alert package to inspect authenticated video telemetry, high-resolution snapshots, and track audit trails.
+                Select an alert to inspect its evidence and event details.
               </div>
             </div>
           )}

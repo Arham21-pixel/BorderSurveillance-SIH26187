@@ -6,26 +6,33 @@ export const WS_BASE_URL =
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
     : "ws://localhost:8000/ws");
 
-export const DEFAULT_MAP_CENTER: [number, number] = [34.1526, 77.5771];
+// Synthetic demo coordinates for map defaults (non-operational)
+export const DEFAULT_MAP_CENTER: [number, number] = [23.3501, 78.1025];
 export const DEFAULT_MAP_ZOOM = 12;
 
 export const SEVERITY_CONFIG = {
+  critical: {
+    label: "Critical",
+    color: "#FF4D67",
+    bg: "rgba(255, 77, 103, 0.15)",
+    border: "#FF4D67",
+  },
   high: {
     label: "High",
-    color: "#ff5a5a",
-    bg: "rgba(255, 90, 90, 0.15)",
-    border: "#ff5a5a",
+    color: "#FF8A2A",
+    bg: "rgba(255, 138, 42, 0.15)",
+    border: "#FF8A2A",
   },
-  medium: {
-    label: "Medium",
-    color: "#f5b942",
-    bg: "rgba(245, 185, 66, 0.15)",
-    border: "#f5b942",
+  suspicious: {
+    label: "Suspicious",
+    color: "#F2C94C",
+    bg: "rgba(242, 201, 76, 0.15)",
+    border: "#F2C94C",
   },
-  low: {
-    label: "Low",
-    color: "#5ad67a",
-    bg: "rgba(90, 214, 122, 0.15)",
-    border: "#5ad67a",
+  normal: {
+    label: "Normal",
+    color: "#35D07F",
+    bg: "rgba(53, 208, 127, 0.15)",
+    border: "#35D07F",
   },
 } as const;

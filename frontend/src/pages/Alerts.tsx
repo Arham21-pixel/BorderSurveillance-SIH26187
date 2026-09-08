@@ -157,38 +157,38 @@ export default function Alerts() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-rose-500/15 text-rose-400 border border-rose-500/25">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-[#FF8A2A]/15 text-[#FF8A2A] border border-[#FF8A2A]/25">
               <AlertOctagon className="w-3 h-3 animate-pulse" />
-              Tactical Incident Management
+              Alert Management
             </span>
             <span className="text-xs font-mono text-slate-400">
-              Northern Defense Sector 4
+              Demo Surveillance Sector
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-            Perimeter Security Alert Center
+            Security Alert Center
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Multi-tier incident triage queue with autonomous risk scoring and evidence audit correlation.
+            Prioritized events generated from video, behaviour and contextual risk.
           </p>
         </div>
 
         {/* Severity Counters */}
         <div className="flex items-center gap-2.5 text-xs">
           <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            <span className="text-rose-400 font-bold font-mono">{criticalCount}</span>
+            <span className="w-2 h-2 rounded-full bg-[#FF4D67] animate-ping" />
+            <span className="text-[#FF4D67] font-bold font-mono">{criticalCount}</span>
             <span className="text-slate-400">Critical</span>
           </div>
 
           <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-orange-500" />
-            <span className="text-orange-400 font-bold font-mono">{highCount}</span>
+            <span className="w-2 h-2 rounded-full bg-[#FF8A2A]" />
+            <span className="text-[#FF8A2A] font-bold font-mono">{highCount}</span>
             <span className="text-slate-400">High</span>
           </div>
 
           <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="text-[#20D5C5] font-bold font-mono">{openCount}</span>
+            <span className="text-[#19D3C5] font-bold font-mono">{openCount}</span>
             <span className="text-slate-400">Total Open</span>
           </div>
         </div>
@@ -408,8 +408,8 @@ export default function Alerts() {
 
               {/* Reason Summary Box */}
               <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs">
-                <div className="text-[10px] font-mono text-[#20D5C5] font-semibold uppercase mb-1">
-                  Autonomous Risk Assessment:
+                <div className="text-[10px] font-mono text-[#19D3C5] font-semibold uppercase mb-1">
+                  Contextual Risk Assessment:
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   {selectedAlert.reason || selectedAlert.description}
@@ -458,7 +458,7 @@ export default function Alerts() {
               {/* Attached Evidence Viewer Component */}
               <div className="space-y-1.5">
                 <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
-                  Forensic Media Attachment:
+                  Evidence Media Attachment:
                 </div>
                 <EvidenceViewer path={selectedAlert.evidence_path} />
               </div>
@@ -467,23 +467,23 @@ export default function Alerts() {
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   onClick={() => setShowDetailsModal(true)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-[#20D5C5] border border-white/[0.08] text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-[#19D3C5] border border-white/[0.08] text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open Incident Dossier & Controls</span>
+                  <span>Open Alert Details & Controls</span>
                 </button>
 
                 <div className="flex gap-2">
                   {selectedAlert.status === "open" ? (
                     <button
                       onClick={() => handleAcknowledge(selectedAlert.id)}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#20D5C5] hover:bg-[#39D98A] text-[#080D11] text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#20D5C5]/20"
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#19D3C5] hover:bg-[#35D07F] text-[#071011] text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#19D3C5]/20"
                     >
                       <Check className="w-4 h-4" />
                       <span>Acknowledge</span>
                     </button>
                   ) : (
-                    <div className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[#39D98A] text-center text-xs font-semibold flex items-center justify-center gap-1.5">
+                    <div className="flex-1 py-2.5 px-3 rounded-xl bg-[#35D07F]/10 border border-[#35D07F]/20 text-[#35D07F] text-center text-xs font-semibold flex items-center justify-center gap-1.5">
                       <Check className="w-4 h-4" />
                       <span>Acknowledged</span>
                     </div>
@@ -493,7 +493,7 @@ export default function Alerts() {
             </div>
           ) : (
             <div className="p-8 text-center bg-[#101820] border border-white/[0.07] rounded-2xl text-slate-400 text-xs">
-              Select an alert from the queue to inspect full telemetry.
+              Select an alert from the queue to inspect evidence and event details.
             </div>
           )}
         </div>

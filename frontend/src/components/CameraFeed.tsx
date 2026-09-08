@@ -42,15 +42,15 @@ export default function CameraFeed({
   const [showStreamSettings, setShowStreamSettings] = useState(false);
 
   const activeCamera = camera ?? cameras[0] ?? {
-    id: "cam-north-01",
-    name: title || "North Fence 01",
-    sector: "north",
+    id: "demo-01",
+    name: title || "Demo Camera 01",
+    sector: "demo-a",
     status: "online",
     source: "0",
-    latitude: 34.1526,
-    longitude: 77.5771,
-    webrtc_url: "/api/cameras/cam-north-01/webrtc",
-    hls_url: "/api/cameras/cam-north-01/stream.m3u8",
+    latitude: 23.3501,
+    longitude: 78.1025,
+    webrtc_url: "/api/cameras/demo-01/webrtc",
+    hls_url: "/api/cameras/demo-01/stream.m3u8",
   };
 
   const isOnline = activeCamera.status === "online";
@@ -125,18 +125,18 @@ export default function CameraFeed({
 
     if (connectionStatus === "live_webrtc") {
       return (
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-emerald-500/10 text-[#39D98A] border border-emerald-500/25 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] animate-ping" />
-          WebRTC Live ({streamLatency}ms)
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-[#35D07F]/10 text-[#35D07F] border border-[#35D07F]/25 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#35D07F] animate-ping" />
+          Demo Video Active ({streamLatency}ms)
         </span>
       );
     }
 
     if (connectionStatus === "live_hls") {
       return (
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-[#20D5C5]/10 text-[#20D5C5] border border-[#20D5C5]/25 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#20D5C5]" />
-          HLS Stream ({streamLatency}ms)
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-[#19D3C5]/10 text-[#19D3C5] border border-[#19D3C5]/25 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#19D3C5]" />
+          Stream Active ({streamLatency}ms)
         </span>
       );
     }
@@ -178,14 +178,14 @@ export default function CameraFeed({
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 mt-0.5">
-              <span className="flex items-center gap-1 text-[#20D5C5]">
+              <span className="flex items-center gap-1 text-[#19D3C5]">
                 <Compass className="w-3 h-3" />
-                Sector: {activeCamera.sector?.toUpperCase() || "NORTH"}
+                Sector: {activeCamera.sector?.toUpperCase() || "DEMO-A"}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-slate-500" />
-                {activeCamera.latitude ? `${activeCamera.latitude.toFixed(4)}°N, ${activeCamera.longitude?.toFixed(4)}°E` : "34.1526°N, 77.5771°E"}
+                SIMULATED LOCATION
               </span>
             </div>
           </div>
@@ -201,13 +201,13 @@ export default function CameraFeed({
                 onClick={() => setShowStreamSettings(!showStreamSettings)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   showStreamSettings
-                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 shadow-sm"
+                    ? "bg-[#19D3C5]/15 text-[#19D3C5] border border-[#19D3C5]/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
                 title="Configure Live Stream Source / Fallback"
               >
                 <Sliders className="w-3 h-3" />
-                <span className="hidden sm:inline">Stream Mode</span>
+                <span className="hidden sm:inline">Video Mode</span>
               </button>
 
               {/* Toggle Detections */}
@@ -216,7 +216,7 @@ export default function CameraFeed({
                 onClick={() => setShowDetections(!showDetections)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   showDetections
-                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 shadow-sm"
+                    ? "bg-[#19D3C5]/15 text-[#19D3C5] border border-[#19D3C5]/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
                 title="Toggle AI Bounding Boxes"
@@ -244,7 +244,7 @@ export default function CameraFeed({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-[#20D5C5] hover:bg-white/[0.04] transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-[#19D3C5] hover:bg-white/[0.04] transition-colors"
                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -268,11 +268,11 @@ export default function CameraFeed({
                 onClick={() => setStreamMode(mode)}
                 className={`px-2.5 py-1 rounded-lg uppercase font-semibold text-[11px] transition-all border ${
                   streamMode === mode
-                    ? "bg-[#20D5C5] text-[#080D11] border-[#20D5C5] shadow-sm shadow-[#20D5C5]/20 font-bold"
+                    ? "bg-[#19D3C5] text-[#071011] border-[#19D3C5] shadow-sm shadow-[#19D3C5]/20 font-bold"
                     : "bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.06]"
                 }`}
               >
-                {mode === "auto" ? "Auto (WebRTC)" : mode === "mock" ? "Synthetic Mock" : mode}
+                {mode === "auto" ? "Auto (WebRTC)" : mode === "mock" ? "Demo Video" : mode}
               </button>
             ))}
           </div>
@@ -288,7 +288,7 @@ export default function CameraFeed({
               onClick={retryConnection}
               className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/[0.08] text-[11px] flex items-center gap-1 transition-colors"
             >
-              <RefreshCw className="w-3 h-3 text-[#20D5C5]" />
+              <RefreshCw className="w-3 h-3 text-[#19D3C5]" />
               <span>Retry Connect</span>
             </button>
           </div>
@@ -306,13 +306,13 @@ export default function CameraFeed({
                 onClick={() => onSelectCamera?.(c)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
                   isSelected
-                    ? "bg-[#20D5C5]/10 text-[#20D5C5] border-[#20D5C5]/30 font-semibold shadow-sm"
+                    ? "bg-[#19D3C5]/10 text-[#19D3C5] border-[#19D3C5]/30 font-semibold shadow-sm"
                     : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.05] hover:text-white border-white/[0.06]"
                 }`}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    c.status === "online" ? "bg-[#39D98A]" : "bg-rose-500"
+                    c.status === "online" ? "bg-[#35D07F]" : "bg-[#FF4D67]"
                   }`}
                 />
                 <span>{c.name}</span>
@@ -324,7 +324,7 @@ export default function CameraFeed({
       )}
 
       {/* Main Video / Live-Feed Viewport */}
-      <div className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#080D11] rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center ${isFullscreen ? "h-full" : ""}`}>
+      <div className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#071011] rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center ${isFullscreen ? "h-full" : ""}`}>
         {/* Real Live HTML5 Video Player */}
         <video
           ref={videoRef}
@@ -339,42 +339,42 @@ export default function CameraFeed({
         {/* Fallback Synthetic Mock Background */}
         {!isLiveFeed && (
           <>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(32,213,197,0.04)_0%,rgba(8,13,17,0.98)_100%)] pointer-events-none z-0" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(25,211,197,0.04)_0%,rgba(7,16,17,0.98)_100%)] pointer-events-none z-0" />
             <div className="absolute inset-0 pointer-events-none opacity-20 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.5)_3px)] z-0" />
           </>
         )}
 
         {/* Live HUD: Top Left Stream Diagnostics */}
-        <div className="absolute top-3 left-4 font-mono text-[11px] text-[#20D5C5] flex flex-col gap-1 pointer-events-none z-20">
-          <div className="flex items-center gap-2 font-medium tracking-wide bg-[#080D11]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
-            <Radio className={`w-3 h-3 ${isLiveFeed ? "text-[#39D98A] animate-pulse" : "text-slate-500"}`} />
+        <div className="absolute top-3 left-4 font-mono text-[11px] text-[#19D3C5] flex flex-col gap-1 pointer-events-none z-20">
+          <div className="flex items-center gap-2 font-medium tracking-wide bg-[#071011]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
+            <Radio className={`w-3 h-3 ${isLiveFeed ? "text-[#35D07F] animate-pulse" : "text-slate-500"}`} />
             <span>
               {isLiveFeed
-                ? `${connectionStatus === "live_webrtc" ? "WEBRTC REALTIME" : "HLS BROADCAST"} · 1080P @ 30.0 FPS`
-                : "FEED STANDBY · AWAITING RTSP SIGNAL"}
+                ? "DEMO VIDEO ACTIVE"
+                : "FEED STANDBY · AWAITING VIDEO SIGNAL"}
             </span>
           </div>
           <div className="text-[10px] text-slate-400 px-2.5">
             {isLiveFeed
-              ? `LATENCY: ${streamLatency}MS · BUFFER: OPTIMAL · CARRIER: LOCKED`
-              : "NO ACTIVE INPUT · CARRIER: DISCONNECTED"}
+              ? `MODE: ${connectionStatus === "live_webrtc" ? "WEBRTC" : "HLS"} · LATENCY: ${streamLatency}MS`
+              : "NO ACTIVE INPUT"}
           </div>
         </div>
 
         {/* Live HUD: Top Right Timestamp */}
         <div className="absolute top-3 right-4 font-mono text-right pointer-events-none z-20">
-          <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#080D11]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
-            <Clock className="w-3 h-3 text-[#20D5C5]" />
+          <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#071011]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
+            <Clock className="w-3 h-3 text-[#19D3C5]" />
             <span>{currentTime}</span>
           </div>
           <div className="text-[10px] text-slate-400 px-2.5 pt-0.5">
-            {isLiveFeed ? "FEED: AUTHENTICATED STREAM" : "FEED AUTH: CRYPTO-SIGNED"}
+            {isLiveFeed ? "FEED: SOURCE VERIFIED" : "FEED STATUS: STANDBY"}
           </div>
         </div>
 
         {/* Live HUD: Center Subtle Reticle */}
-        <div className="absolute inset-0 m-auto w-12 h-12 border border-[#20D5C5]/20 rounded-full pointer-events-none flex items-center justify-center">
-          <div className="w-1.5 h-1.5 bg-[#20D5C5]/40 rounded-full" />
+        <div className="absolute inset-0 m-auto w-12 h-12 border border-[#19D3C5]/20 rounded-full pointer-events-none flex items-center justify-center">
+          <div className="w-1.5 h-1.5 bg-[#19D3C5]/40 rounded-full" />
         </div>
 
         {/* AI Overlays (Detection Bounding Boxes + Zone) */}
@@ -383,15 +383,15 @@ export default function CameraFeed({
             {showDetections && (
               <DetectionOverlay
                 showZone={showZone}
-                zoneName="NORTH PERIMETER BELT (EXCLUSION ZONE)"
+                zoneName="SIMULATED MONITORING ZONE (RESTRICTED)"
                 showTracks={true}
               />
             )}
 
             {/* Bottom Left AI Telemetry */}
-            <div className="absolute bottom-3 left-4 z-20 font-mono text-[10px] text-[#39D98A] flex items-center gap-2 bg-[#080D11]/90 px-3 py-1.5 rounded-lg border border-[#39D98A]/30 backdrop-blur-md shadow-lg">
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-              <span>YOLOv8 + B-SORT: 2 ACTIVE TARGETS</span>
+            <div className="absolute bottom-3 left-4 z-20 font-mono text-[10px] text-[#35D07F] flex items-center gap-2 bg-[#071011]/90 px-3 py-1.5 rounded-lg border border-[#35D07F]/30 backdrop-blur-md shadow-lg">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#FF8A2A]" />
+              <span>YOLO + BYTETRACK: 2 ACTIVE TRACKS</span>
             </div>
           </>
         ) : (
@@ -401,17 +401,17 @@ export default function CameraFeed({
             </div>
             <div className="text-sm font-semibold text-white">FEED CARRIER SIGNAL LOST</div>
             <div className="text-slate-400">Camera source ({activeCamera.source}) is currently offline or unreachable.</div>
-            <div className="text-[10px] text-slate-500">CHECK RTSP STREAM ROUTE OR HARDWARE CONNECTION</div>
+            <div className="text-[10px] text-slate-500">CHECK CAMERA SOURCE OR RETRY CONNECTION</div>
           </div>
         )}
 
         {/* Bottom Right Source Tag */}
-        <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#080D11]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
+        <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#071011]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
           <span>SRC: {activeCamera.source}</span>
           {!isLiveFeed && isOnline && (
             <button
               onClick={retryConnection}
-              className="text-[#20D5C5] hover:text-[#39D98A] flex items-center gap-1 font-semibold transition-colors"
+              className="text-[#19D3C5] hover:text-[#35D07F] flex items-center gap-1 font-semibold transition-colors"
             >
               <RefreshCw className="w-2.5 h-2.5" />
               Connect Live

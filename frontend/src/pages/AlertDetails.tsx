@@ -138,13 +138,13 @@ export default function AlertDetails() {
             </div>
             <div>
               <div className="text-[10px] font-mono uppercase text-[#8fa3b8]">
-                Autonomous Risk Engine Score (Backend Output)
+                Contextual Risk Engine Score (Backend Output)
               </div>
               <div className="text-xl font-bold text-[#e8eef5] font-mono">
                 {displayScore.toFixed(2)}{" "}
                 <span className="text-xs text-[#8fa3b8] font-normal">/ 1.00</span>
                 <span className="ml-3 text-xs px-2 py-0.5 rounded bg-[#3a1515] text-[#ff5a5a] font-bold">
-                  {(displayScore * 100).toFixed(0)}% THREAT PROBABILITY
+                  {(displayScore * 100).toFixed(0)}% RISK SCORE
                 </span>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function AlertDetails() {
 
           <div className="text-[10px] font-mono text-[#8fa3b8] sm:text-right">
             <div>SOURCE: BACKEND /API/ALERTS</div>
-            <div className="text-[#3dd6c6]">INTELLIGENCE.RISK_ENGINE CLASSIFIED</div>
+            <div className="text-[#3dd6c6]">AI_ANALYTICS_ENGINE CLASSIFIED</div>
           </div>
         </div>
 
@@ -163,7 +163,7 @@ export default function AlertDetails() {
         <div className="p-4 rounded-xl bg-[#16202b]/60 border border-[#243140] space-y-2">
           <div className="text-xs font-mono font-bold text-[#3dd6c6] uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4" />
-            Incident Explanation & Forensic Rationale:
+            Incident Explanation & Risk Context:
           </div>
           <p className="text-xs sm:text-sm text-[#e8eef5] leading-relaxed">
             {alert.reason || alert.description}
@@ -211,7 +211,7 @@ export default function AlertDetails() {
           <div className="p-3.5 rounded-lg bg-[#0c141c] border border-[#243140]">
             <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5 text-[#ff5a5a]" />
-              DEFENSE ZONE
+              MONITORING ZONE
             </div>
             <div className="font-bold text-[#e8eef5] mt-1 truncate">
               {alert.zone || "Zone 1: Inner Exclusion Belt"}
@@ -221,10 +221,10 @@ export default function AlertDetails() {
           <div className="p-3.5 rounded-lg bg-[#0c141c] border border-[#243140]">
             <div className="text-[10px] text-[#8fa3b8] flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#5ad67a]" />
-              EVIDENCE INTEGRITY
+              EVIDENCE STATUS
             </div>
             <div className="font-bold text-[#5ad67a] mt-1">
-              {alert.evidence_path ? "SNAPSHOT VERIFIED" : "NONE"}
+              {alert.evidence_path ? "SOURCE VERIFIED" : "NONE"}
             </div>
           </div>
         </div>
@@ -233,10 +233,10 @@ export default function AlertDetails() {
         <div className="p-4 rounded-xl bg-[#0c141c] border border-[#243140] font-mono text-xs space-y-1">
           <div className="text-[10px] text-[#8fa3b8] uppercase font-bold flex items-center gap-1.5">
             <Compass className="w-3.5 h-3.5 text-[#3dd6c6]" />
-            Target Kinematics & Trajectory Vector:
+            Target Trajectory:
           </div>
           <div className="text-[#e8eef5] leading-relaxed">
-            {alert.trajectory || "Heading 185° South at 1.4 m/s from coordinates [34.1534°N, 77.5765°E] directly towards perimeter barrier."}
+            {alert.trajectory || "Heading south-east toward restricted zone boundary in simulated sector map."}
           </div>
         </div>
 
@@ -265,8 +265,8 @@ export default function AlertDetails() {
             >
               <option value="open">Open (Unacknowledged)</option>
               <option value="acknowledged">Acknowledged (Review in progress)</option>
-              <option value="escalated">Escalated (QRF / BSF Dispatched)</option>
-              <option value="resolved">Resolved (Perimeter secured)</option>
+              <option value="escalated">Escalated (Field team informed)</option>
+              <option value="resolved">Resolved (Area secured)</option>
               <option value="false_positive">False Positive (Animal / Glitch)</option>
             </select>
           </div>

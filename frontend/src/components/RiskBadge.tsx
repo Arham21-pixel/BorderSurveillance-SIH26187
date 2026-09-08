@@ -15,23 +15,23 @@ export default function RiskBadge({ severity, size = "sm" }: RiskBadgeProps) {
   const norm = normalizeSeverity(severity);
 
   const styleMap = {
-    CRITICAL: "bg-rose-500/10 text-rose-400 border-rose-500/25",
-    HIGH: "bg-orange-500/10 text-orange-400 border-orange-500/25",
-    SUSPICIOUS: "bg-amber-500/10 text-amber-400 border-amber-500/25",
-    NORMAL: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
+    CRITICAL: "bg-[#FF4D67]/10 text-[#FF4D67] border-[#FF4D67]/25",
+    HIGH: "bg-[#FF8A2A]/10 text-[#FF8A2A] border-[#FF8A2A]/25",
+    SUSPICIOUS: "bg-[#F2C94C]/10 text-[#F2C94C] border-[#F2C94C]/25",
+    NORMAL: "bg-[#35D07F]/10 text-[#35D07F] border-[#35D07F]/25",
   };
 
   const dotMap = {
-    CRITICAL: "bg-rose-400 animate-pulse",
-    HIGH: "bg-orange-400",
-    SUSPICIOUS: "bg-amber-400",
-    NORMAL: "bg-emerald-400",
+    CRITICAL: "bg-[#FF4D67] animate-pulse",
+    HIGH: "bg-[#FF8A2A]",
+    SUSPICIOUS: "bg-[#F2C94C]",
+    NORMAL: "bg-[#35D07F]",
   };
 
   const labelMap = {
     CRITICAL: "Critical",
     HIGH: "High",
-    SUSPICIOUS: "Medium",
+    SUSPICIOUS: "Suspicious",
     NORMAL: "Normal",
   };
 

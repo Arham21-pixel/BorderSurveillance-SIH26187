@@ -7,26 +7,6 @@ from intelligence.risk_engine import severity_for
 _ALERTS: list[AlertRead] = []
 
 
-def _seed() -> None:
-    if _ALERTS:
-        return
-    _ALERTS.append(
-        AlertRead(
-            id=str(uuid4()),
-            camera_id="cam-north-01",
-            event_id="seed-event",
-            severity="high",
-            title="Restricted zone entry",
-            description="Person crossed the inner fence belt on North Fence 01.",
-            status="open",
-            evidence_path=None,
-            timestamp=datetime.now(timezone.utc),
-        )
-    )
-
-
-_seed()
-
 
 def list_alerts(severity: str | None = None, status: str | None = None) -> list[AlertRead]:
     rows = _ALERTS

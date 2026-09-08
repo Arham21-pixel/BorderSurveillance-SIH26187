@@ -57,7 +57,7 @@ export default function CameraMap({
   onSelectCamera,
   height = "100%",
 }: CameraMapProps) {
-  // Determine map center based on first camera or Ladakh default
+  // Determine map center based on first camera or demo default
   const center = useMemo<[number, number]>(() => {
     const camWithCoords = cameras.find((c) => c.latitude && c.longitude);
     if (camWithCoords && camWithCoords.latitude && camWithCoords.longitude) {
@@ -84,7 +84,7 @@ export default function CameraMap({
           maxZoom={18}
         />
 
-        {/* Sector Defense Coverage Circles */}
+        {/* Demo Surveillance Coverage Circle */}
         <Circle
           center={DEFAULT_MAP_CENTER}
           radius={2500}
@@ -130,7 +130,7 @@ export default function CameraMap({
                   <div className="text-[11px] font-mono text-slate-400 space-y-1">
                     <div>Sector: <span className="text-white uppercase font-semibold">{camera.sector}</span></div>
                     <div>Source: <span className="text-slate-300">{camera.source}</span></div>
-                    <div>Coords: {lat.toFixed(4)}°N, {lon.toFixed(4)}°E</div>
+                    <div>Location: Simulated map position</div>
                   </div>
                 </div>
               </Popup>
@@ -141,7 +141,7 @@ export default function CameraMap({
 
       {/* Floating Tactical HUD Info Overlay */}
       <div className="absolute top-2.5 right-2.5 z-[400] bg-[#080D11]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/[0.08] text-[11px] font-mono text-slate-400 shadow-lg">
-        SECTOR: <span className="text-[#20D5C5] font-semibold">LADAKH SECTOR 4</span>
+        SECTOR: <span className="text-[#19D3C5] font-semibold">DEMO SURVEILLANCE</span>
       </div>
     </div>
   );

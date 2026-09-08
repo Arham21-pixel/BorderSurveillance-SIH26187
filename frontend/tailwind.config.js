@@ -9,17 +9,17 @@ export default {
     extend: {
       colors: {
         sentinel: {
-          bg: "#080D11",
-          panel: "#101820",
-          panel2: "#141E28",
-          line: "#1F2B38",
-          accent: "#20D5C5",
-          emerald: "#39D98A",
-          critical: "#ff4d4d",
-          high: "#ff5a5a",
-          medium: "#f5b942",
-          low: "#39D98A",
-          muted: "#94a3b8",
+          bg: "#071011",
+          panel: "#0D171B",
+          panel2: "#111E23",
+          line: "#203239",
+          accent: "#19D3C5",
+          normal: "#35D07F",
+          suspicious: "#F2C94C",
+          high: "#FF8A2A",
+          critical: "#FF4D67",
+          muted: "#8B9AA3",
+          muted2: "#617079",
         },
       },
       fontFamily: {

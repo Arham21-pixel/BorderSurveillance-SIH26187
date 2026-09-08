@@ -1,8 +1,8 @@
-# Border AI Sentinel
+# NETRA
 
-**Smart India Hackathon 2026 — Problem Statement SIH26187**
+**Smart India Hackathon 2026 - Problem Statement SIH26187**
 
-AI-assisted border surveillance for multi-camera detection, tracking, behaviour analysis, risk scoring, and operator alerting.
+AI-assisted surveillance for multi-camera detection, tracking, behaviour analysis, contextual risk scoring, and operator alert management.
 
 [![Backend CI](https://github.com/Arham21-pixel/BorderSurveillance-SIH26187/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Arham21-pixel/BorderSurveillance-SIH26187/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/Arham21-pixel/BorderSurveillance-SIH26187/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Arham21-pixel/BorderSurveillance-SIH26187/actions/workflows/frontend-ci.yml)
@@ -13,11 +13,15 @@ AI-assisted border surveillance for multi-camera detection, tracking, behaviour 
 | --- | --- |
 | Vision | Person / vehicle detection, multi-object tracking, low-light enhancement |
 | Behaviour | Restricted-zone entry, loitering, direction of travel, grouping |
-| Intelligence | Rule-based risk engine with high / medium / low scoring |
+| Intelligence | Contextual risk engine with 0-100 scoring (NORMAL / SUSPICIOUS / HIGH / CRITICAL) |
 | Evidence | Snapshot + clip packaging for each alert |
 | Operations | Live dashboard, alert queue, camera map, analytics |
 
 This is an **operator aid**, not an autonomous weapon or targeting system. Alerts require human review.
+
+The current prototype follows:
+- **Synthetic demo history** for map markers, historical analytics, and seeded alerts
+- **Live AI pipeline data** for active detections, tracks, zone crossings, and new alerts
 
 ## Architecture
 

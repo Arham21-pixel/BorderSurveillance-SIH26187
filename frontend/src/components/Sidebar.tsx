@@ -22,7 +22,7 @@ const navLinks = [
   { to: "/cameras", label: "Live Cameras", icon: Video },
   { to: "/alerts", label: "Alerts", icon: ShieldAlert, showBadge: true },
   { to: "/evidence", label: "Evidence", icon: FileSearch },
-  { to: "/map", label: "Map", icon: MapIcon },
+  { to: "/map", label: "Sector Map", icon: MapIcon },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
@@ -42,28 +42,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-[#0A1015]/95 backdrop-blur-xl border-r border-white/[0.07] p-4 flex flex-col z-50 transition-transform duration-200 ease-in-out ${
+        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-[#071011]/95 backdrop-blur-xl border-r border-white/[0.07] p-4 flex flex-col z-50 transition-transform duration-200 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         {/* Brand Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] px-2 pt-1">
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#20D5C5]/20 to-[#39D98A]/10 border border-[#20D5C5]/30">
-              <Shield className="w-4 h-4 text-[#20D5C5]" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#39D98A] ring-2 ring-[#0A1015] animate-pulse" />
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#19D3C5]/20 to-[#35D07F]/10 border border-[#19D3C5]/30">
+              <Shield className="w-4 h-4 text-[#19D3C5]" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#35D07F] ring-2 ring-[#071011] animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-white">
-                  NETRA
-                </span>
-                <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded bg-[#20D5C5]/10 text-[#20D5C5] border border-[#20D5C5]/20">
-                  AI
-                </span>
-              </div>
+              <div className="font-bold text-sm tracking-tight text-white">NETRA</div>
               <div className="text-[10px] text-slate-400 font-mono tracking-tight">
-                BORDER SENTINEL · SIH26187
+                NETRA • SIH PROTOTYPE
               </div>
             </div>
           </div>
@@ -98,7 +91,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className={({ isActive }) =>
                     `group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
                       isActive
-                        ? "bg-[#20D5C5]/10 text-[#20D5C5] border border-[#20D5C5]/20 shadow-[0_0_15px_-3px_rgba(32,213,197,0.15)] font-semibold"
+                        ? "bg-[#19D3C5]/10 text-[#19D3C5] border border-[#19D3C5]/20 shadow-[0_0_15px_-3px_rgba(25,211,197,0.15)] font-semibold"
                         : "text-slate-400 hover:bg-white/[0.03] hover:text-slate-200 border border-transparent"
                     }`
                   }
@@ -120,26 +113,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* Bottom Telemetry & Status Badge */}
           <div className="pt-4 border-t border-white/[0.06] mt-auto">
-            <div className="p-3 rounded-xl bg-[#101820] border border-white/[0.06] flex flex-col gap-2 shadow-inner">
+            <div className="p-3 rounded-xl bg-[#0D171B] border border-white/[0.06] flex flex-col gap-2 shadow-inner">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-                  <Radio className="w-3 h-3 text-[#20D5C5]" />
-                  Threat Engine
+                  <Radio className="w-3 h-3 text-[#19D3C5]" />
+                  AI ANALYTICS ENGINE
                 </span>
-                <span className="text-[10px] font-mono font-semibold text-[#39D98A] px-2 py-0.5 rounded-full bg-[#39D98A]/10 border border-[#39D98A]/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] animate-ping" />
+                <span className="text-[10px] font-mono font-semibold text-[#35D07F] px-2 py-0.5 rounded-full bg-[#35D07F]/10 border border-[#35D07F]/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#35D07F] animate-ping" />
                   Active
                 </span>
               </div>
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>INFERENCE CONF</span>
-                <span className="text-slate-200 font-medium">YOLOv8 + B-SORT</span>
+                <span>DETECTION</span>
+                <span className="text-slate-200 font-medium">YOLO</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <span>TRACKING</span>
+                <span className="text-slate-200 font-medium">ByteTrack</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <span>MODE</span>
+                <span className="text-slate-200 font-medium">CPU-FIRST</span>
               </div>
             </div>
 
             <div className="mt-3 px-1 flex items-center justify-between text-[10px] font-mono text-slate-500">
               <span>BUILD v0.1.0</span>
-              <span>DEFENSE AI LABS</span>
+              <span>NETRA • SIH PROTOTYPE</span>
             </div>
           </div>
         </div>

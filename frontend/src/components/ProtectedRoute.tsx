@@ -13,16 +13,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#070b10] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#071011] flex flex-col items-center justify-center p-6 text-center">
         <div className="relative mb-6">
-          <div className="w-16 h-16 rounded-full border-2 border-[#3dd6c6]/20 border-t-[#3dd6c6] animate-spin" />
-          <Radio className="w-6 h-6 text-[#3dd6c6] absolute inset-0 m-auto animate-pulse" />
+          <div className="w-16 h-16 rounded-full border-2 border-[#19D3C5]/20 border-t-[#19D3C5] animate-spin" />
+          <Radio className="w-6 h-6 text-[#19D3C5] absolute inset-0 m-auto animate-pulse" />
         </div>
-        <div className="font-mono text-sm font-bold tracking-widest text-[#3dd6c6] uppercase">
-          SENTINEL SECURE GATEWAY
+        <div className="font-mono text-sm font-bold tracking-widest text-[#19D3C5] uppercase">
+          NETRA OPERATOR ACCESS
         </div>
-        <div className="text-xs text-[#8fa3b8] font-mono mt-2">
-          Verifying security clearance and cryptographic session token...
+        <div className="text-xs text-[#8B9AA3] font-mono mt-2">
+          Verifying operator session...
         </div>
       </div>
     );

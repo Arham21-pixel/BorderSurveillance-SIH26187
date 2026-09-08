@@ -35,6 +35,8 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
 
   const openAlerts = alerts.filter((a) => a.status === "open");
   const onlineCameras = cameras.filter((c) => c.status === "online").length;
+  const displayOnlineCameras = cameras.length > 0 ? onlineCameras : 1;
+  const displayTotalCameras = cameras.length > 0 ? cameras.length : 3;
 
   // Live system clock (IST)
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
   };
 
   return (
-    <header className="h-16 border-b border-white/[0.06] bg-[#080D11]/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 transition-all">
+    <header className="h-16 border-b border-white/[0.06] bg-[#071011]/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 transition-all">
       {/* Left: Mobile menu toggle + System Status */}
       <div className="flex items-center gap-3 sm:gap-4">
         {onToggleSidebar && (
@@ -87,24 +89,28 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
 
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-            <Radio className="w-3.5 h-3.5 text-[#20D5C5] animate-pulse" />
+            <Radio className="w-3.5 h-3.5 text-[#19D3C5] animate-pulse" />
             <span className="text-xs font-semibold text-slate-200">
-              NETRA<span className="text-[#20D5C5] ml-0.5">AI</span>
+              NETRA
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#39D98A]/10 border border-[#39D98A]/20 text-[#39D98A] text-[11px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] animate-ping" />
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#35D07F]/10 border border-[#35D07F]/20 text-[#35D07F] text-[11px] font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#35D07F] animate-ping" />
             <span>Online</span>
             <span className="text-slate-600">|</span>
             <span className="text-slate-300 font-mono text-[10px]">
-              {onlineCameras}/{cameras.length || 3} Cams Active
+              {displayOnlineCameras} / {displayTotalCameras} Cameras Active
             </span>
           </div>
 
+          <div className="hidden sm:flex items-center px-2.5 py-1 rounded-full bg-[#19D3C5]/10 border border-[#19D3C5]/25 text-[#19D3C5] text-[10px] font-mono font-semibold tracking-wider uppercase">
+            Demo Mode
+          </div>
+
           <div className="hidden xl:flex items-center gap-1.5 text-xs text-slate-400 font-medium ml-1">
-            <Shield className="w-3.5 h-3.5 text-[#20D5C5]" />
-            <span>Sector: Northern Command (Ladakh)</span>
+            <Shield className="w-3.5 h-3.5 text-[#19D3C5]" />
+            <span>Sector: Demo Surveillance Area</span>
           </div>
         </div>
       </div>
@@ -114,7 +120,7 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
         {/* System Time */}
         <div className="hidden md:flex flex-col text-right font-mono pr-1">
           <span className="text-xs text-slate-200 font-medium tracking-wider">
-            {currentTime} <span className="text-[10px] text-[#20D5C5] font-semibold">IST</span>
+            {currentTime} <span className="text-[10px] text-[#19D3C5] font-semibold">IST</span>
           </span>
           <span className="text-[10px] text-slate-500">
             {new Date().toISOString().split("T")[0]}
@@ -143,9 +149,9 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
             <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[#101820] border border-white/[0.1] shadow-2xl shadow-black/80 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="p-3.5 bg-[#141E28] border-b border-white/[0.06] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-[#20D5C5]" />
+                  <Activity className="w-4 h-4 text-[#19D3C5]" />
                   <span className="text-xs font-semibold text-white tracking-wide">
-                    Incident Alerts Queue
+                    Security Alerts Queue
                   </span>
                 </div>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 font-mono font-medium border border-rose-500/20">
@@ -156,8 +162,8 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
               <div className="max-h-72 overflow-y-auto divide-y divide-white/[0.04]">
                 {openAlerts.length === 0 ? (
                   <div className="p-6 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                    <CheckCircle2 className="w-6 h-6 text-[#39D98A]" />
-                    <span>Sector perimeter clear. No active alerts.</span>
+                    <CheckCircle2 className="w-6 h-6 text-[#35D07F]" />
+                    <span>Demo surveillance area clear. No active alerts.</span>
                   </div>
                 ) : (
                   openAlerts.slice(0, 5).map((alert) => (
@@ -200,9 +206,9 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
                 <Link
                   to="/alerts"
                   onClick={() => setShowNotifications(false)}
-                  className="text-xs font-medium text-[#20D5C5] hover:text-[#39D98A] transition-colors"
+                  className="text-xs font-medium text-[#19D3C5] hover:text-[#35D07F] transition-colors"
                 >
-                  Open Full Alert Center →
+                  Open Security Alert Center →
                 </Link>
               </div>
             </div>
@@ -211,16 +217,16 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
 
         {/* Current User Profile Pill */}
         <div className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#20D5C5]/20 to-[#39D98A]/20 border border-[#20D5C5]/30 flex items-center justify-center text-xs font-semibold text-[#20D5C5]">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#19D3C5]/20 to-[#35D07F]/20 border border-[#19D3C5]/30 flex items-center justify-center text-xs font-semibold text-[#19D3C5]">
             {user?.name ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "OP"}
           </div>
           <div className="hidden lg:flex flex-col text-left">
             <span className="text-xs font-medium text-slate-200 leading-tight">
-              {user?.name || user?.email || "Capt. V. Sharma"}
+              {user?.name || "Operator #001"}
             </span>
-            <span className="text-[10px] text-[#20D5C5] font-mono flex items-center gap-1">
+            <span className="text-[10px] text-[#19D3C5] font-mono flex items-center gap-1">
               <UserCheck className="w-2.5 h-2.5" />
-              {user?.role ? user.role.toUpperCase() : "OPERATOR #402"}
+              {user?.role ? user.role.toUpperCase() : "DEMO SESSION"}
             </span>
           </div>
         </div>
@@ -242,10 +248,10 @@ export default function TopBar({ onToggleSidebar, isSidebarOpen }: TopBarProps) 
           <div className="bg-[#101820] border border-white/[0.1] rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-rose-400 mb-3">
               <AlertTriangle className="w-5 h-5" />
-              <h3 className="text-sm font-semibold text-white">End Sentinel Session</h3>
+              <h3 className="text-sm font-semibold text-white">End NETRA Session</h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              Confirm operator shift handoff? All telemetry and alert queues will continue recording to the central surveillance log.
+              Confirm operator session logout? Monitoring continues in demo mode.
             </p>
             <div className="flex justify-end gap-2.5">
               <button

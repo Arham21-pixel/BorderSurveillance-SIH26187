@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     supabase_timeout_seconds: float = 10.0
 
+    # Set to true to always use InMemoryRepository (ignores Supabase creds)
+    # Useful for demos / CI / offline hackathon presentations
+    force_inmemory: bool = False
+
     auth_required: bool = True
     auth_header_scheme: str = "Bearer"
 

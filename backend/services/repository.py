@@ -250,14 +250,20 @@ class SupabaseRepository(BaseRepository):
 
 
 class InMemoryRepository(BaseRepository):
+    # Fixed demo UUIDs — stable across restarts so the frontend deep-links work
+    CAM_NORTH = "11111111-1111-1111-1111-111111111111"
+    CAM_GATE  = "22222222-2222-2222-2222-222222222222"
+    CAM_FENCE = "33333333-3333-3333-3333-333333333333"
+
     def __init__(self) -> None:
         now = _utcnow().isoformat()
-        camera_id = str(uuid4())
+
+        # ── Demo cameras ─────────────────────────────────────────────────────
         self.cameras: dict[str, dict] = {
-            camera_id: {
-                "id": camera_id,
-                "name": "North Gate Cam",
-                "camera_code": "NG-01",
+            self.CAM_NORTH: {
+                "id": self.CAM_NORTH,
+                "name": "CAM-NORTH",
+                "camera_code": "NF-01",
                 "location": "North Sector Fence",
                 "latitude": 34.1526,
                 "longitude": 77.5771,
@@ -265,9 +271,104 @@ class InMemoryRepository(BaseRepository):
                 "status": "ACTIVE",
                 "created_at": now,
                 "updated_at": now,
-            }
+            },
+            self.CAM_GATE: {
+                "id": self.CAM_GATE,
+                "name": "CAM-GATE",
+                "camera_code": "GW-02",
+                "location": "Main Gate Entry",
+                "latitude": 34.1401,
+                "longitude": 77.5102,
+                "stream_ref": "data/sample_videos/demo.mp4",
+                "status": "ACTIVE",
+                "created_at": now,
+                "updated_at": now,
+            },
+            self.CAM_FENCE: {
+                "id": self.CAM_FENCE,
+                "name": "CAM-FENCE",
+                "camera_code": "FE-03",
+                "location": "South Perimeter Fence",
+                "latitude": 34.1350,
+                "longitude": 77.5400,
+                "stream_ref": "rtsp://demo/cam3",
+                "status": "ACTIVE",
+                "created_at": now,
+                "updated_at": now,
+            },
         }
-        self.zones: dict[str, dict] = {}
+
+        # ── Demo zones (2-3 per camera) ───────────────────────────────────────
+        z_seed = now
+        self.zones: dict[str, dict] = {
+            # CAM-NORTH zones
+            "z-north-restricted": {
+                "id": "z-north-restricted",
+                "camera_id": self.CAM_NORTH,
+                "name": "Inner Fence Belt",
+                "zone_type": "RESTRICTED",
+                "polygon": [[80, 200], [900, 200], [900, 520], [80, 520]],
+                "severity": "HIGH",
+                "created_at": z_seed,
+            },
+            "z-north-buffer": {
+                "id": "z-north-buffer",
+                "camera_id": self.CAM_NORTH,
+                "name": "Buffer Zone",
+                "zone_type": "BUFFER",
+                "polygon": [[40, 100], [960, 100], [960, 200], [40, 200]],
+                "severity": "MEDIUM",
+                "created_at": z_seed,
+            },
+            # CAM-GATE zones
+            "z-gate-entry": {
+                "id": "z-gate-entry",
+                "camera_id": self.CAM_GATE,
+                "name": "Gate Entry Corridor",
+                "zone_type": "ENTRY",
+                "polygon": [[120, 170], [760, 170], [760, 460], [120, 460]],
+                "severity": "MEDIUM",
+                "created_at": z_seed,
+            },
+            "z-gate-restricted": {
+                "id": "z-gate-restricted",
+                "camera_id": self.CAM_GATE,
+                "name": "Restricted Gate Zone",
+                "zone_type": "RESTRICTED",
+                "polygon": [[300, 300], [600, 300], [600, 460], [300, 460]],
+                "severity": "HIGH",
+                "created_at": z_seed,
+            },
+            "z-gate-normal": {
+                "id": "z-gate-normal",
+                "camera_id": self.CAM_GATE,
+                "name": "Public Approach Area",
+                "zone_type": "NORMAL",
+                "polygon": [[0, 0], [1280, 0], [1280, 170], [0, 170]],
+                "severity": "LOW",
+                "created_at": z_seed,
+            },
+            # CAM-FENCE zones
+            "z-fence-restricted": {
+                "id": "z-fence-restricted",
+                "camera_id": self.CAM_FENCE,
+                "name": "Fence Exclusion Zone",
+                "zone_type": "RESTRICTED",
+                "polygon": [[0, 350], [1280, 350], [1280, 720], [0, 720]],
+                "severity": "CRITICAL",
+                "created_at": z_seed,
+            },
+            "z-fence-buffer": {
+                "id": "z-fence-buffer",
+                "camera_id": self.CAM_FENCE,
+                "name": "Fence Buffer Belt",
+                "zone_type": "BUFFER",
+                "polygon": [[0, 250], [1280, 250], [1280, 350], [0, 350]],
+                "severity": "HIGH",
+                "created_at": z_seed,
+            },
+        }
+
         self.tracks: dict[str, dict] = {}
         self.detections: dict[str, dict] = {}
         self.events: dict[str, dict] = {}
@@ -478,6 +579,6 @@ _MEMORY_REPOSITORY = InMemoryRepository()
 
 
 def get_repository() -> BaseRepository:
-    if settings.supabase_ready:
+    if not settings.force_inmemory and settings.supabase_ready:
         return SupabaseRepository()
     return _MEMORY_REPOSITORY

@@ -79,7 +79,7 @@ export function useLiveStream(camera: Camera, options: UseLiveStreamOptions = {}
             pc.connectionState === "disconnected"
           ) {
             setConnectionStatus("fallback_mock");
-            setErrorMessage("WebRTC stream carrier disconnected. Running tactical fallback.");
+            setErrorMessage("WebRTC stream disconnected. Running demo fallback.");
           }
         };
 

@@ -161,7 +161,7 @@ export default function Events() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `border_audit_events_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `netra_event_log_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -180,14 +180,14 @@ export default function Events() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#e8eef5]">
-              Sensor Events & Forensic Audit Log
+              Video Events & Risk Log
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#16202b] text-[#3dd6c6] border border-[#243140] uppercase">
-              SIH 26187 Trail
+              NETRA • SIH Prototype
             </span>
           </div>
           <p className="text-xs sm:text-sm text-[#8fa3b8] mt-1">
-            Complete sequential log of computer vision detections, behaviour anomalies, and risk engine scores.
+            Sequential log of detections, behaviour events, and contextual risk scores.
           </p>
         </div>
 
@@ -196,7 +196,7 @@ export default function Events() {
           <button
             onClick={handleExportCSV}
             className="px-3 py-1.5 rounded-lg bg-[#101820] hover:bg-[#16202b] text-[#e8eef5] border border-[#243140] text-xs font-mono flex items-center gap-1.5 transition-colors shadow-sm"
-            title="Download CSV Audit Trail"
+            title="Download CSV Event Log"
           >
             <Download className="w-3.5 h-3.5 text-[#3dd6c6]" />
             <span>Export CSV</span>
@@ -208,7 +208,7 @@ export default function Events() {
             title="Print or Export PDF Report"
           >
             <Printer className="w-3.5 h-3.5 text-[#f5b942]" />
-            <span>Print Audit (PDF)</span>
+            <span>Print Report (PDF)</span>
           </button>
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function Events() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 font-mono text-xs">
         <div className="p-3.5 rounded-xl bg-[#101820] border border-[#243140] flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#8fa3b8] uppercase">Total Events Audited</div>
+            <div className="text-[10px] text-[#8fa3b8] uppercase">Total Events Logged</div>
             <div className="text-xl font-bold text-[#e8eef5] mt-1">{events.length}</div>
           </div>
           <div className="p-2.5 rounded-lg bg-[#0c141c] text-[#3dd6c6] border border-[#243140]">
@@ -346,7 +346,7 @@ export default function Events() {
           <div className="flex items-center gap-2 text-[#8fa3b8]">
             <Filter className="w-3.5 h-3.5 text-[#3dd6c6]" />
             <span>
-              Showing <strong>{processedEvents.length}</strong> matching audit entries
+              Showing <strong>{processedEvents.length}</strong> matching event entries
             </span>
             {(searchQuery || kindFilter !== "ALL" || cameraFilter !== "ALL" || minRiskThreshold > 0 || dateRange !== "ALL") && (
               <button
@@ -399,7 +399,7 @@ export default function Events() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-[#8fa3b8]">
-                    Loading forensic event logs...
+                    Loading event logs...
                   </td>
                 </tr>
               ) : paginatedEvents.length === 0 ? (
@@ -535,14 +535,14 @@ export default function Events() {
         </div>
       </div>
 
-      {/* Selected Event Forensic Drawer */}
+      {/* Selected Event Detail Drawer */}
       {selectedEvent && (
         <div className="p-5 rounded-xl bg-[#101820] border border-[#243140] space-y-3 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-2 border-b border-[#243140]">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#3dd6c6]" />
               <h3 className="text-xs font-mono font-bold uppercase text-[#e8eef5]">
-                Forensic Audit Detail: {selectedEvent.id}
+                Event Detail: {selectedEvent.id}
               </h3>
             </div>
             <button
@@ -567,7 +567,7 @@ export default function Events() {
             </div>
 
             <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-              <div className="text-[10px] text-[#8fa3b8]">RISK ATTRIBUTION</div>
+              <div className="text-[10px] text-[#8fa3b8]">RISK CONTEXT</div>
               <div className="font-bold text-[#ff5a5a] mt-0.5">
                 {selectedEvent.risk_score.toFixed(2)} (
                 {severityFromScore(selectedEvent.risk_score)})
@@ -583,7 +583,7 @@ export default function Events() {
           </div>
 
           <div className="p-3 rounded bg-[#0c141c] border border-[#243140] text-xs font-mono text-[#8fa3b8]">
-            <span className="font-bold text-[#e8eef5]">Incident Narrative: </span>
+            <span className="font-bold text-[#e8eef5]">Event Narrative: </span>
             {selectedEvent.description}
           </div>
 

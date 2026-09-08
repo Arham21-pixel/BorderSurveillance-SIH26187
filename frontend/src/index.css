@@ -6,18 +6,18 @@
 
 :root {
   --radius: 1rem;
-  --bg: #080D11;
-  --panel: #101820;
-  --panel-2: #141E28;
-  --line: #1F2B38;
-  --text: #F1F5F9;
-  --muted: #94A3B8;
-  --accent: #20D5C5;
-  --emerald: #39D98A;
-  --high: #FF5A5A;
-  --critical: #FF4D4D;
-  --medium: #F5B942;
-  --low: #39D98A;
+  --bg: #071011;
+  --panel: #0D171B;
+  --panel-2: #111E23;
+  --line: #203239;
+  --text: #F4F7F7;
+  --muted: #8B9AA3;
+  --muted-2: #617079;
+  --accent: #19D3C5;
+  --normal: #35D07F;
+  --suspicious: #F2C94C;
+  --high: #FF8A2A;
+  --critical: #FF4D67;
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -47,17 +47,17 @@ html, body, #root {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1F2B38;
+  background: #203239;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D3D4E;
+  background: #2A4149;
 }
 
 @layer components {
   /* Premium Dark SaaS card style */
   .saas-card {
-    background: #101820;
+    background: #0D171B;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 1rem;
     box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
@@ -65,12 +65,12 @@ html, body, #root {
   }
 
   .saas-card:hover {
-    border-color: rgba(32, 213, 197, 0.2);
+    border-color: rgba(25, 211, 197, 0.2);
   }
 
   /* Glassmorphism utility */
   .glass-panel {
-    background: rgba(16, 24, 32, 0.75);
+    background: rgba(13, 23, 27, 0.75);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.07);
@@ -78,15 +78,15 @@ html, body, #root {
 
   /* Subdued glow for active elements */
   .teal-glow {
-    box-shadow: 0 0 20px -4px rgba(32, 213, 197, 0.25);
+    box-shadow: 0 0 20px -4px rgba(25, 211, 197, 0.25);
   }
 
   .emerald-glow {
-    box-shadow: 0 0 20px -4px rgba(57, 217, 138, 0.25);
+    box-shadow: 0 0 20px -4px rgba(53, 208, 127, 0.25);
   }
 
   .critical-glow {
-    box-shadow: 0 0 20px -4px rgba(255, 77, 77, 0.3);
+    box-shadow: 0 0 20px -4px rgba(255, 77, 103, 0.3);
   }
 }
 
@@ -94,8 +94,8 @@ html, body, #root {
 .feed {
   aspect-ratio: 16 / 9;
   background:
-    radial-gradient(circle at center, rgba(32, 213, 197, 0.03) 0%, rgba(8, 13, 17, 0.95) 100%),
-    #080D11;
+    radial-gradient(circle at center, rgba(25, 211, 197, 0.03) 0%, rgba(7, 16, 17, 0.95) 100%),
+    #071011;
   border-radius: 0.75rem;
   position: relative;
   overflow: hidden;
@@ -108,13 +108,13 @@ html, body, #root {
 }
 
 .leaflet-container {
-  background: #080D11 !important;
+  background: #071011 !important;
 }
 
 /* Leaflet map popup dark theme */
 .tactical-map-popup .leaflet-popup-content-wrapper {
-  background: #101820 !important;
-  color: #F1F5F9 !important;
+  background: #0D171B !important;
+  color: #F4F7F7 !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 12px !important;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7) !important;
@@ -122,7 +122,7 @@ html, body, #root {
 }
 
 .tactical-map-popup .leaflet-popup-tip {
-  background: #101820 !important;
+  background: #0D171B !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 

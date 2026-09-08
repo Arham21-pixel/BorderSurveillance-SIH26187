@@ -1,22 +1,12 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles,
   Download,
   Wand2,
   BookOpen,
-  ArrowRight,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Menu,
-  X,
-  Plus,
 } from "lucide-react";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden font-sans text-white bg-black select-none">
@@ -45,7 +35,7 @@ export default function Landing() {
           <div className="absolute inset-4 lg:inset-6 rounded-3xl liquid-glass-strong -z-10 pointer-events-none" />
 
           <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-2rem)] lg:min-h-[calc(100vh-3rem)] p-4 sm:p-6 lg:p-8">
-            {/* Nav: Brand + Menu */}
+            {/* Nav: Brand */}
             <header className="flex items-center justify-between gap-4">
               {/* Logo (32x32) + "netra" text */}
               <div className="flex items-center gap-3">
@@ -65,52 +55,6 @@ export default function Landing() {
                 <span className="font-semibold text-2xl tracking-tighter text-white">
                   netra
                 </span>
-              </div>
-
-              {/* Menu Button: liquid-glass pill */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="liquid-glass rounded-full px-4 py-2 flex items-center gap-2 text-sm text-white hover:scale-105 transition-transform"
-                >
-                  <span className="text-xs uppercase tracking-wider text-white/80">Menu</span>
-                  {menuOpen ? <X className="w-4 h-4 text-white" /> : <Menu className="w-4 h-4 text-white" />}
-                </button>
-
-                {/* Dropdown menu */}
-                {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-2xl liquid-glass-strong p-2 space-y-1 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
-                    <button
-                      onClick={() => navigate("/login")}
-                      className="w-full text-left px-3 py-2 text-xs text-white/90 hover:text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-between"
-                    >
-                      <span>Command Console</span>
-                      <ArrowRight className="w-3 h-3 text-white/50" />
-                    </button>
-                    <button
-                      onClick={() => navigate("/cameras")}
-                      className="w-full text-left px-3 py-2 text-xs text-white/90 hover:text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-between"
-                    >
-                      <span>Live CCTV Grid</span>
-                      <ArrowRight className="w-3 h-3 text-white/50" />
-                    </button>
-                    <button
-                      onClick={() => navigate("/alerts")}
-                      className="w-full text-left px-3 py-2 text-xs text-white/90 hover:text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-between"
-                    >
-                      <span>Alert Operations</span>
-                      <ArrowRight className="w-3 h-3 text-white/50" />
-                    </button>
-                    <button
-                      onClick={() => navigate("/analytics")}
-                      className="w-full text-left px-3 py-2 text-xs text-white/90 hover:text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-between"
-                    >
-                      <span>Shift Intelligence</span>
-                      <ArrowRight className="w-3 h-3 text-white/50" />
-                    </button>
-                  </div>
-                )}
               </div>
             </header>
 
@@ -134,14 +78,19 @@ export default function Landing() {
               </div>
 
               {/* Main Headline with Source Serif 4 italic accent */}
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-[-0.05em] text-white leading-[1.05] mb-8">
-                Autonomous vision for <br />
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-[-0.05em] text-white leading-[1.05] mb-4">
+                Intelligent vision <br />
                 <span className="font-serif italic text-white/80">
-                  frontier defense AI
+                  for border surveillance
                 </span>
               </h1>
 
-              {/* CTA Button: liquid-glass-strong, rounded-full */}
+              {/* Subtitle */}
+              <p className="text-sm sm:text-base text-white/70 max-w-lg mb-8 leading-relaxed font-sans">
+                AI-powered CCTV analytics, behaviour-aware tracking, and contextual risk scoring.
+              </p>
+
+              {/* Primary CTA Button: Sole Entry Point to Auth/Command Dashboard */}
               <button
                 type="button"
                 onClick={() => navigate("/login")}
@@ -156,13 +105,13 @@ export default function Landing() {
               {/* Three Pills */}
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="liquid-glass rounded-full px-4 py-1.5 text-xs text-white/80 hover:scale-105 transition-transform">
-                  Thermal Multi-Tracking
+                  Intelligent Video Analytics
                 </span>
                 <span className="liquid-glass rounded-full px-4 py-1.5 text-xs text-white/80 hover:scale-105 transition-transform">
-                  Autonomous Risk Engine
+                  Contextual Risk Engine
                 </span>
                 <span className="liquid-glass rounded-full px-4 py-1.5 text-xs text-white/80 hover:scale-105 transition-transform">
-                  Forensic Evidence Vault
+                  Evidence Management
                 </span>
               </div>
             </section>
@@ -173,11 +122,11 @@ export default function Landing() {
                 TACTICAL DOCTRINE
               </span>
               <p className="text-sm text-white/90 leading-relaxed mb-3">
-                "We engineered an <span className="font-serif italic text-white/70">unblinking frontier</span> with zero human latency."
+                "We engineered an <span className="font-serif italic text-white/70">intelligent surveillance layer</span> with explainable, operator-reviewable alerts."
               </p>
               <div className="flex items-center gap-3 w-full text-[11px] text-white/50 tracking-wider font-mono">
                 <div className="flex-1 h-[1px] bg-white/15" />
-                <span>SIH 26187 DEFENSE COMMAND</span>
+                <span>SIH 26187 • BORDER SURVEILLANCE</span>
                 <div className="flex-1 h-[1px] bg-white/15" />
               </div>
             </footer>
@@ -186,54 +135,8 @@ export default function Landing() {
 
         {/* ================= RIGHT PANEL (Desktop Only) ================= */}
         <div className="w-full lg:w-[48%] hidden lg:flex flex-col justify-between p-6 relative">
-          {/* Top Bar: Social / Protocol pill + Operator Account Pill */}
-          <div className="flex items-center justify-between gap-4">
-            {/* Social / Link icons pill */}
-            <div className="liquid-glass rounded-full px-4 py-2 flex items-center gap-3 hover:scale-105 transition-transform">
-              <a
-                href="#twitter"
-                aria-label="Twitter"
-                className="text-white hover:text-white/80 transition-colors"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="#linkedin"
-                aria-label="LinkedIn"
-                className="text-white hover:text-white/80 transition-colors"
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a
-                href="#instagram"
-                aria-label="Instagram"
-                className="text-white hover:text-white/80 transition-colors"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <div className="w-[1px] h-3.5 bg-white/20" />
-              <ArrowRight className="w-3.5 h-3.5 text-white/60" />
-            </div>
-
-            {/* Operator Account Button with Sparkles button */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="liquid-glass rounded-full px-4 py-2 text-xs text-white flex items-center gap-2 hover:scale-105 transition-transform"
-              >
-                <span>Operator Portal</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="liquid-glass rounded-full p-2.5 text-white hover:scale-105 transition-transform"
-                title="Launch Portal"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          {/* Top spacer */}
+          <div />
 
           {/* Center-Right Intelligence Card */}
           <div className="self-end my-auto w-64 p-5 rounded-3xl liquid-glass space-y-2 hover:scale-105 transition-transform shadow-2xl">
@@ -244,10 +147,10 @@ export default function Landing() {
               <div className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
             </div>
             <h3 className="text-sm font-semibold text-white tracking-tight">
-              Autonomous Vision Fleet
+              AI Video Analytics
             </h3>
             <p className="text-xs text-white/70 leading-relaxed">
-              Multi-camera ByteTrack fusion, loitering duration counters, and geofenced perimeter intrusion detection.
+              Object tracking with ByteTrack, loitering duration counters, and geofenced perimeter intrusion detection.
             </p>
           </div>
 
@@ -264,7 +167,7 @@ export default function Landing() {
                   Neural Inference
                 </div>
                 <p className="text-[11px] text-white/60 leading-snug">
-                  YOLOv8 + CLAHE low-light enhancement executing at 30+ FPS.
+                  Lightweight YOLO detection + CPU-first processing.
                 </p>
               </div>
 
@@ -274,15 +177,15 @@ export default function Landing() {
                   <BookOpen className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-xs font-semibold text-white">
-                  Evidence Vault
+                  Evidence Management
                 </div>
                 <p className="text-[11px] text-white/60 leading-snug">
-                  SHA-256 cryptographic incident packages and forensic clips.
+                  Snapshots, clips & event metadata.
                 </p>
               </div>
             </div>
 
-            {/* Bottom Card: CCTV Thumbnail + Description + Action button */}
+            {/* Bottom Card: CCTV Thumbnail + Description */}
             <div className="liquid-glass rounded-3xl p-4 flex items-center justify-between gap-4 hover:scale-105 transition-transform">
               {/* Thumbnail (96x64) */}
               <div className="w-24 h-16 rounded-2xl bg-white/5 border-none relative overflow-hidden shrink-0 flex items-center justify-center">
@@ -308,22 +211,12 @@ export default function Landing() {
               {/* Title & Description */}
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-semibold text-white truncate">
-                  Threat Attribution Matrix
+                  Contextual Risk Scoring
                 </div>
                 <p className="text-[11px] text-white/60 line-clamp-2 mt-0.5 leading-snug">
-                  Multi-signal fusion scoring, zone penetration alert triggers, and instant operator triage.
+                  Multi-signal fusion scoring, zone penetration alert triggers, and operator-assisted alert triage.
                 </p>
               </div>
-
-              {/* Plus / Enter button */}
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 hover:bg-white/20 transition-colors"
-                title="Launch Console"
-              >
-                <Plus className="w-4 h-4 text-white" />
-              </button>
             </div>
           </div>
         </div>

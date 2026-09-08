@@ -6,10 +6,17 @@ from backend.schemas.ingest import DetectionBatchInput, DetectionInput, Pipeline
 from backend.services.repository import BaseRepository
 from backend.services.websocket_manager import alert_ws_manager
 from intelligence.engine.pipeline import IntelligencePipeline
+
+# Module-level singleton so loitering/trajectory/group state persists across
+# requests.  The pipeline itself is stateless w.r.t. the DB; only in-memory
+# tracking structures (trajectory, loitering timers, active tracks) live here.
+_PIPELINE = IntelligencePipeline()
+
+
 class IngestService:
     def __init__(self, repo: BaseRepository) -> None:
         self.repo = repo
-        self.pipeline = IntelligencePipeline()
+        self.pipeline = _PIPELINE
 
     async def process_detection(self, payload: DetectionInput) -> PipelineItemResult:
         zone_rows = self.repo.list_zones(payload.camera_id)

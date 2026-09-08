@@ -19,16 +19,16 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-[#3dd6c6]" />
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#e8eef5]">
-            Risk Attribution & Signal Breakdown
+            Risk & Context Breakdown
           </h3>
         </div>
         <span className="text-[10px] font-mono text-[#8fa3b8]">
-          AUTONOMOUS INTELLIGENCE EXPLAINABILITY
+          CONTEXTUAL SCORING EXPLAINABILITY
         </span>
       </div>
 
       <p className="text-xs text-[#8fa3b8] leading-relaxed">
-        Granular contributing factors computed by the intelligence risk engine. Positive signals escalate the threat level, while suppressing signals penalize or downgrade false alarms.
+        Contributing factors from the contextual risk engine. Positive signals increase risk, while suppressing signals reduce noisy detections.
       </p>
 
       {items.length === 0 ? (
@@ -43,7 +43,7 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
           <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#5ad67a] pb-1.5 border-b border-[#243140]/60">
             <span className="flex items-center gap-1.5">
               <ShieldAlert className="w-3.5 h-3.5 text-[#5ad67a]" />
-              Threat Escalators (Positive)
+              Risk Escalators (Positive)
             </span>
             <span>+{positiveContributors.reduce((acc, curr) => acc + curr.delta, 0)} pts</span>
           </div>
@@ -83,7 +83,7 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
           <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#ff7a7a] pb-1.5 border-b border-[#243140]/60">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#ff7a7a]" />
-              Threat Suppressors (Negative)
+              Risk Suppressors (Negative)
             </span>
             <span>{negativeContributors.reduce((acc, curr) => acc + curr.delta, 0)} pts</span>
           </div>

@@ -52,6 +52,8 @@ export default function Cameras() {
 
   const onlineCount = cameras.filter((c) => c.status === "online").length;
   const offlineCount = cameras.length - onlineCount;
+  const displayOnline = cameras.length > 0 ? onlineCount : 1;
+  const displayTotal = cameras.length > 0 ? cameras.length : 3;
 
   // Check if selected camera has active alerts
   const activeAlertsForCamera = alerts.filter(
@@ -64,27 +66,30 @@ export default function Cameras() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.06]">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-emerald-500/15 text-[#39D98A] border border-emerald-500/25">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-[#35D07F]/15 text-[#35D07F] border border-[#35D07F]/25">
               <Radio className="w-3 h-3 animate-pulse" />
-              Live Surveillance Fleet
+              Video Monitoring
             </span>
             <span className="text-xs font-mono text-slate-400">
-              Ladakh Sector 4 · Line of Actual Control
+              Simulated Monitoring Zone
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
             Live CCTV Feeds & Camera Fleet
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time multi-camera border streams, spatial perimeter overlays, and AI track telemetry.
+            Video feeds and camera monitoring.
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Live or recorded video with AI detection, tracking and zone overlays.
           </p>
         </div>
 
         {/* Fleet KPI Badges */}
         <div className="flex items-center gap-3 text-xs">
           <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-[#39D98A] animate-ping" />
-            <span className="text-[#39D98A] font-bold font-mono">{onlineCount}</span>
+            <span className="w-2 h-2 rounded-full bg-[#35D07F] animate-ping" />
+            <span className="text-[#35D07F] font-bold font-mono">{displayOnline}</span>
             <span className="text-slate-400">Online</span>
           </div>
 
@@ -95,8 +100,8 @@ export default function Cameras() {
           </div>
 
           <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <Video className="w-4 h-4 text-[#20D5C5]" />
-            <span className="text-white font-bold font-mono">{cameras.length}</span>
+            <Video className="w-4 h-4 text-[#19D3C5]" />
+            <span className="text-white font-bold font-mono">{displayTotal}</span>
             <span className="text-slate-400">Total</span>
           </div>
         </div>
@@ -122,7 +127,7 @@ export default function Cameras() {
                 </div>
                 <div>
                   <div className="text-slate-400 text-[10px]">AI PIPELINE</div>
-                  <div className="text-slate-200 font-semibold font-mono">YOLOv8n + SimpleTracker</div>
+                  <div className="text-slate-200 font-semibold font-mono">YOLO + ByteTrack · CPU-FIRST</div>
                 </div>
               </div>
 
@@ -131,9 +136,9 @@ export default function Cameras() {
                   <Compass className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-slate-400 text-[10px]">GEOSPATIAL COORDS</div>
+                  <div className="text-slate-400 text-[10px]">MAP LABEL</div>
                   <div className="text-slate-200 font-semibold font-mono">
-                    {selectedCamera.latitude ? `${selectedCamera.latitude.toFixed(4)}°N, ${selectedCamera.longitude?.toFixed(4)}°E` : "34.1526°N, 77.5771°E"}
+                    {selectedCamera.sector ? `SIMULATED LOCATION · ${selectedCamera.sector.toUpperCase()}` : "SIMULATED LOCATION"}
                   </div>
                 </div>
               </div>
@@ -143,8 +148,8 @@ export default function Cameras() {
                   <Activity className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-slate-400 text-[10px]">THREAT STATUS</div>
-                  <div className={activeAlertsForCamera.length > 0 ? "text-rose-400 font-semibold font-mono" : "text-[#39D98A] font-semibold font-mono"}>
+                  <div className="text-slate-400 text-[10px]">RISK STATUS</div>
+                  <div className={activeAlertsForCamera.length > 0 ? "text-[#FF8A2A] font-semibold font-mono" : "text-[#35D07F] font-semibold font-mono"}>
                     {activeAlertsForCamera.length > 0 ? `${activeAlertsForCamera.length} Active Alerts` : "Clear"}
                   </div>
                 </div>
@@ -157,10 +162,10 @@ export default function Cameras() {
         <div className="lg:col-span-4 bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col h-[580px] shadow-xl">
           <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
             <span className="text-xs font-semibold text-white flex items-center gap-2">
-              <Video className="w-4 h-4 text-[#20D5C5]" />
-              Camera Stations ({filteredCameras.length})
+              <Video className="w-4 h-4 text-[#19D3C5]" />
+              Camera Monitoring ({filteredCameras.length})
             </span>
-            <span className="text-[11px] font-mono text-[#20D5C5]">
+            <span className="text-[11px] font-mono text-[#19D3C5]">
               {selectedCamera?.name}
             </span>
           </div>
@@ -172,8 +177,8 @@ export default function Cameras() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search station or sector..."
-              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#20D5C5]/50 transition-colors"
+              placeholder="Search camera or sector..."
+              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#19D3C5]/50 transition-colors"
             />
           </div>
 
@@ -183,7 +188,7 @@ export default function Cameras() {
               onClick={() => setSectorFilter("all")}
               className={`px-3 py-1 rounded-lg transition-colors capitalize text-xs ${
                 sectorFilter === "all"
-                  ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 font-semibold"
+                  ? "bg-[#19D3C5]/15 text-[#19D3C5] border border-[#19D3C5]/30 font-semibold"
                   : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
               }`}
             >
@@ -195,7 +200,7 @@ export default function Cameras() {
                 onClick={() => setSectorFilter(s)}
                 className={`px-3 py-1 rounded-lg transition-colors capitalize whitespace-nowrap text-xs ${
                   sectorFilter === s
-                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 font-semibold"
+                    ? "bg-[#19D3C5]/15 text-[#19D3C5] border border-[#19D3C5]/30 font-semibold"
                     : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
                 }`}
               >
@@ -219,7 +224,7 @@ export default function Cameras() {
                   onClick={() => setSelectedCameraId(camera.id)}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#141E28] border-[#20D5C5]/40 shadow-lg shadow-black/30"
+                      ? "bg-[#111E23] border-[#19D3C5]/40 shadow-lg shadow-black/30"
                       : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04]"
                   }`}
                 >
@@ -227,7 +232,7 @@ export default function Cameras() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          isOnline ? "bg-[#39D98A] animate-pulse" : "bg-rose-500"
+                          isOnline ? "bg-[#35D07F] animate-pulse" : "bg-[#FF4D67]"
                         }`}
                       />
                       <span className="text-xs font-semibold text-white">
@@ -238,7 +243,7 @@ export default function Cameras() {
                     <span
                       className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${
                         isOnline
-                          ? "bg-emerald-500/10 text-[#39D98A] border-emerald-500/25"
+                          ? "bg-[#35D07F]/10 text-[#35D07F] border-[#35D07F]/25"
                           : "bg-slate-800 text-slate-400 border-slate-700"
                       }`}
                     >
@@ -248,7 +253,7 @@ export default function Cameras() {
 
                   <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mt-2">
                     <span className="flex items-center gap-1 capitalize">
-                      <Compass className="w-3 h-3 text-[#20D5C5]" />
+                      <Compass className="w-3 h-3 text-[#19D3C5]" />
                       Sector: {camera.sector}
                     </span>
                     <span>Src: {camera.source}</span>
@@ -274,11 +279,11 @@ export default function Cameras() {
       <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-xl">
         <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
           <span className="text-xs font-semibold text-white flex items-center gap-2">
-            <Video className="w-4 h-4 text-[#20D5C5]" />
-            Multi-Camera Mosaic Grid (Click to focus primary stage)
+            <Video className="w-4 h-4 text-[#19D3C5]" />
+            Demo Camera Mosaic (Click to focus primary stage)
           </span>
           <span className="text-xs font-mono text-slate-400">
-            3 STATIONS ACTIVE
+            {displayOnline} / {displayTotal} ACTIVE
           </span>
         </div>
 
@@ -290,9 +295,9 @@ export default function Cameras() {
               <div
                 key={c.id}
                 onClick={() => setSelectedCameraId(c.id)}
-                className={`group rounded-xl overflow-hidden border transition-all cursor-pointer bg-[#080D11] ${
+                className={`group rounded-xl overflow-hidden border transition-all cursor-pointer bg-[#071011] ${
                   isSelected
-                    ? "border-[#20D5C5] ring-1 ring-[#20D5C5] shadow-lg shadow-[#20D5C5]/10"
+                    ? "border-[#19D3C5] ring-1 ring-[#19D3C5] shadow-lg shadow-[#19D3C5]/10"
                     : "border-white/[0.07] hover:border-white/[0.18]"
                 }`}
               >
@@ -312,16 +317,16 @@ export default function Cameras() {
                 </div>
 
                 {/* Simulated Mini Viewport */}
-                <div className="aspect-video relative bg-[#080D11] flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#20D5C5_1px,transparent_1px)] [background-size:12px_12px]" />
-                  <div className="absolute top-2 left-2 text-[9px] font-mono text-[#20D5C5] bg-[#080D11]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
+                <div className="aspect-video relative bg-[#071011] flex items-center justify-center overflow-hidden">
+                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#19D3C5_1px,transparent_1px)] [background-size:12px_12px]" />
+                  <div className="absolute top-2 left-2 text-[9px] font-mono text-[#19D3C5] bg-[#071011]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
                     {c.id}
                   </div>
                   <div className="text-center text-xs text-slate-400 flex flex-col items-center gap-1.5">
-                    <Video className="w-5 h-5 group-hover:text-[#20D5C5] transition-colors" />
-                    <span className="font-mono text-[10px]">{isOnline ? "30 FPS LIVE STREAM" : "SIGNAL OFFLINE"}</span>
+                    <Video className="w-5 h-5 group-hover:text-[#19D3C5] transition-colors" />
+                    <span className="font-mono text-[10px]">{isOnline ? "DEMO VIDEO ACTIVE" : "SIGNAL OFFLINE"}</span>
                   </div>
-                  <div className="absolute bottom-2 right-2 text-[9px] font-mono text-slate-500 bg-[#080D11]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
+                  <div className="absolute bottom-2 right-2 text-[9px] font-mono text-slate-500 bg-[#071011]/90 px-2 py-0.5 rounded-md border border-white/[0.06]">
                     SRC: {c.source}
                   </div>
                 </div>

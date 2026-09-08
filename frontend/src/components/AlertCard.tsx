@@ -49,6 +49,14 @@ export default function AlertCard({
 
   const hasEvidence = Boolean(alert.evidence_path);
   const isOpen = alert.status === "open";
+  const riskToneClass =
+    normSeverity === "CRITICAL"
+      ? "text-[#FF4D67]"
+      : normSeverity === "HIGH"
+      ? "text-[#FF8A2A]"
+      : normSeverity === "SUSPICIOUS"
+      ? "text-[#F2C94C]"
+      : "text-[#35D07F]";
 
   return (
     <article
@@ -63,12 +71,12 @@ export default function AlertCard({
       <span
         className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
           normSeverity === "CRITICAL"
-            ? "bg-rose-500"
+            ? "bg-[#FF4D67]"
             : normSeverity === "HIGH"
-            ? "bg-orange-500"
+            ? "bg-[#FF8A2A]"
             : normSeverity === "SUSPICIOUS"
-            ? "bg-amber-500"
-            : "bg-[#39D98A]"
+            ? "bg-[#F2C94C]"
+            : "bg-[#35D07F]"
         }`}
       />
 
@@ -77,7 +85,7 @@ export default function AlertCard({
         <div className="flex items-center gap-2">
           <RiskBadge severity={normSeverity} />
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-300">
-            Risk <span className={normSeverity === "CRITICAL" || normSeverity === "HIGH" ? "text-rose-400 font-semibold" : "text-[#39D98A] font-semibold"}>{(riskScore * 100).toFixed(0)}%</span>
+            Risk <span className={`${riskToneClass} font-semibold`}>{(riskScore * 100).toFixed(0)}%</span>
           </span>
           <span
             className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${
@@ -102,7 +110,7 @@ export default function AlertCard({
           {alert.title}
         </h3>
         <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-          {alert.description || alert.reason || "Autonomous behavior engine flag raised from live video surveillance."}
+          {alert.description || alert.reason || "Contextual risk event generated from monitored video."}
         </p>
       </div>
 
