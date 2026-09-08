@@ -35,18 +35,6 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// 8-hour alert trend data points
-const mockTrendData = [
-  { time: "08:00", alerts: 1, intrusions: 0 },
-  { time: "09:00", alerts: 2, intrusions: 1 },
-  { time: "10:00", alerts: 1, intrusions: 0 },
-  { time: "11:00", alerts: 4, intrusions: 2 },
-  { time: "12:00", alerts: 2, intrusions: 1 },
-  { time: "13:00", alerts: 5, intrusions: 3 },
-  { time: "14:00", alerts: 3, intrusions: 1 },
-  { time: "15:00", alerts: 6, intrusions: 4 },
-];
-
 export default function Dashboard() {
   const rawAlerts = useAlerts();
   const cameras = useCameras();
@@ -66,11 +54,43 @@ export default function Dashboard() {
     alerts_by_severity: { high: 0, medium: 0, low: 0 },
   });
 
+  // Dynamic 8-hour alert trend data computed from real alerts
+  const trendData = useMemo(() => {
+    const now = new Date();
+    const buckets: { [key: string]: { time: string; alerts: number; intrusions: number } } = {};
+
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourStr = d.getHours().toString().padStart(2, "0") + ":00";
+      buckets[hourStr] = { time: hourStr, alerts: 0, intrusions: 0 };
+    }
+
+    alerts.forEach((a) => {
+      const alertTime = new Date(a.timestamp);
+      const diffHours = (now.getTime() - alertTime.getTime()) / (1000 * 60 * 60);
+      if (diffHours <= 8 && diffHours >= 0) {
+        const hourStr = alertTime.getHours().toString().padStart(2, "0") + ":00";
+        if (buckets[hourStr]) {
+          buckets[hourStr].alerts += 1;
+          if (
+            a.event_type?.includes("intrusion") ||
+            a.title?.toLowerCase().includes("breach") ||
+            a.title?.toLowerCase().includes("intrusion")
+          ) {
+            buckets[hourStr].intrusions += 1;
+          }
+        }
+      }
+    });
+
+    return Object.values(buckets);
+  }, [alerts]);
+
   // Sync alerts when rawAlerts load
   useEffect(() => {
-    if (rawAlerts && rawAlerts.length > 0) {
+    if (rawAlerts) {
       setAlerts(rawAlerts);
-      setSelectedAlert(rawAlerts[0]);
+      setSelectedAlert(rawAlerts.length > 0 ? rawAlerts[0] : null);
     }
   }, [rawAlerts]);
 
@@ -86,15 +106,15 @@ export default function Dashboard() {
     fetchSummary()
       .then(setSummary)
       .catch(() => {
-        // Fallback calculation from local data
+        // Fallback calculation from real local state
         setSummary({
-          cameras_online: cameras.filter((c) => c.status === "online").length || 2,
-          cameras_total: cameras.length || 3,
-          alerts_open: alerts.filter((a) => a.status === "open").length || 1,
+          cameras_online: cameras.filter((c) => c.status === "online").length,
+          cameras_total: cameras.length,
+          alerts_open: alerts.filter((a) => a.status === "open").length,
           alerts_by_severity: {
-            high: alerts.filter((a) => a.severity === "high").length || 1,
-            medium: alerts.filter((a) => a.severity === "medium").length || 0,
-            low: alerts.filter((a) => a.severity === "low").length || 0,
+            high: alerts.filter((a) => a.severity.toLowerCase() === "high" || a.severity.toLowerCase() === "critical").length,
+            medium: alerts.filter((a) => a.severity.toLowerCase() === "medium" || a.severity.toLowerCase() === "suspicious").length,
+            low: alerts.filter((a) => a.severity.toLowerCase() === "low" || a.severity.toLowerCase() === "normal").length,
           },
         });
       });
@@ -130,61 +150,77 @@ export default function Dashboard() {
 
   const onlineCamsCount = cameras.filter((c) => c.status === "online").length;
 
-  return (
-    <div className="space-y-6">
-      {/* Tactical Situational Awareness Banner: Answers "What, Where, How serious, Evidence" */}
-      <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#3dd6c6]/5 to-transparent pointer-events-none" />
+  // Composite risk score calculated dynamically from open alerts
+  const avgRiskScore = useMemo(() => {
+    const openAlerts = alerts.filter((a) => a.status === "open");
+    if (openAlerts.length === 0) return 0;
+    const sum = openAlerts.reduce((acc, curr) => acc + (curr.risk_score || 0), 0);
+    return +(sum / openAlerts.length).toFixed(2);
+  }, [alerts]);
 
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-[#ff5a5a]/20 text-[#ff5a5a] border border-[#ff5a5a]/40">
-                <AlertOctagon className="w-3 h-3 animate-pulse" />
-                {criticalCount > 0 ? "LIVE THREAT DETECTED" : "SECTOR PATROL ACTIVE"}
+  return (
+    <div className="space-y-6 sm:space-y-7">
+      {/* Tactical Situational Awareness Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-[#101820] border border-white/[0.07] p-5 sm:p-6 shadow-xl">
+        {/* Ambient subtle glow inside hero card */}
+        <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-[#20D5C5]/[0.06] via-[#39D98A]/[0.02] to-transparent pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                  criticalCount > 0
+                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                    : "bg-emerald-500/15 text-[#39D98A] border border-emerald-500/30"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${criticalCount > 0 ? "bg-rose-500 animate-ping" : "bg-[#39D98A]"}`} />
+                {criticalCount > 0 ? "Live Threat Detected" : "Sector Patrol Active"}
               </span>
-              <span className="text-[11px] font-mono text-[#8fa3b8]">
-                LADAKH SECTOR 4 · LINE OF ACTUAL CONTROL
+
+              <span className="text-xs font-mono text-slate-400">
+                Ladakh Sector 4 · Line of Actual Control
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#e8eef5]">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
               Sentinel Primary Command & Triage Console
             </h1>
 
             {/* Quick Answer Grid */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono">
+            <div className="pt-1 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
               <div className="flex items-center gap-1.5">
-                <span className="text-[#8fa3b8]">WHAT:</span>
-                <span className="text-[#e8eef5] font-bold">
+                <span className="text-slate-400 font-medium">WHAT:</span>
+                <span className="text-slate-200 font-semibold">
                   {selectedAlert ? selectedAlert.title : "Perimeter Belt Crossings"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[#8fa3b8]">WHERE:</span>
-                <span className="text-[#3dd6c6] font-bold">
+                <span className="text-slate-400 font-medium">WHERE:</span>
+                <span className="text-[#20D5C5] font-semibold font-mono">
                   {selectedCamera ? selectedCamera.name : "North Fence 01"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[#8fa3b8]">SEVERITY:</span>
-                <span className="text-[#ff5a5a] font-bold uppercase">
-                  {criticalCount > 0 ? "CRITICAL / HIGH" : "NORMAL MONITORING"}
+                <span className="text-slate-400 font-medium">SEVERITY:</span>
+                <span className={`font-semibold uppercase ${criticalCount > 0 ? "text-rose-400" : "text-[#39D98A]"}`}>
+                  {criticalCount > 0 ? "Critical / High" : "Normal Monitoring"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[#8fa3b8]">EVIDENCE:</span>
-                <span className="text-[#5ad67a] font-bold">
-                  {selectedAlert?.evidence_path ? "SNAPSHOT ATTACHED" : "CLIP LOGGED"}
+                <span className="text-slate-400 font-medium">EVIDENCE:</span>
+                <span className="text-[#39D98A] font-semibold">
+                  {selectedAlert?.evidence_path ? "Snapshot Attached" : "Clip Logged"}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <Link
               to="/alerts"
-              className="px-3.5 py-2 rounded-lg bg-[#ff5a5a]/10 hover:bg-[#ff5a5a]/20 text-[#ff5a5a] border border-[#ff5a5a]/30 font-bold transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 font-semibold text-xs transition-all flex items-center gap-2 shadow-sm"
             >
               <ShieldAlert className="w-4 h-4" />
               <span>Triage Queue ({criticalCount})</span>
@@ -194,117 +230,145 @@ export default function Dashboard() {
       </div>
 
       {/* 4 KPI Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* 1. Current Risk Overview */}
-        <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#8fa3b8] mb-2">
-            <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
-              1. Threat Level & Risk
+        <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col justify-between hover:border-white/[0.15] transition-all duration-200 shadow-lg">
+          <div className="flex items-center justify-between text-slate-400 mb-3">
+            <span className="text-xs font-medium text-slate-400">
+              Threat Level & Risk
             </span>
-            <Shield className="w-4 h-4 text-[#ff5a5a]" />
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-rose-400">
+              <Shield className="w-4 h-4" />
+            </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold text-[#ff5a5a] font-mono">
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
               {criticalCount > 0 ? "DEFCON 3" : "DEFCON 4"}
             </div>
-            <div className="text-xs font-mono px-2 py-0.5 rounded bg-[#3a1515] text-[#ff5a5a] font-bold">
-              HIGH RISK
+            <div
+              className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                avgRiskScore >= 0.7
+                  ? "bg-rose-500/10 text-rose-400 border-rose-500/25"
+                  : avgRiskScore >= 0.4
+                  ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                  : "bg-emerald-500/10 text-[#39D98A] border-emerald-500/25"
+              }`}
+            >
+              {avgRiskScore >= 0.7 ? "High Risk" : avgRiskScore >= 0.4 ? "Elevated" : "Normal"}
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-[#243140]/60 text-[10px] font-mono text-[#8fa3b8] flex justify-between">
+          <div className="mt-4 pt-3 border-t border-white/[0.05] text-[11px] font-mono text-slate-400 flex justify-between">
             <span>COMPOSITE SCORE</span>
-            <span className="text-[#e8eef5] font-bold">0.88 / 1.00</span>
+            <span className="text-slate-200 font-bold">{avgRiskScore.toFixed(2)} / 1.00</span>
           </div>
         </div>
 
         {/* 2. Active & Critical Alerts */}
-        <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#8fa3b8] mb-2">
-            <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
-              2. Active Alerts
+        <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col justify-between hover:border-white/[0.15] transition-all duration-200 shadow-lg">
+          <div className="flex items-center justify-between text-slate-400 mb-3">
+            <span className="text-xs font-medium text-slate-400">
+              Active Alerts
             </span>
-            <AlertOctagon className="w-4 h-4 text-[#3dd6c6]" />
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
+              <AlertOctagon className="w-4 h-4" />
+            </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold text-[#e8eef5] font-mono">
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-mono">
               {alerts.filter((a) => a.status === "open").length}
-              <span className="text-xs text-[#8fa3b8] font-normal ml-1.5">OPEN</span>
+              <span className="text-xs font-sans text-slate-400 font-normal ml-2">Open</span>
             </div>
-            <div className="text-xs font-mono text-[#ff5a5a] font-bold">
-              {criticalCount} CRITICAL
+            <div className="text-xs font-medium text-rose-400 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+              {criticalCount} Critical
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-[#243140]/60 text-[10px] font-mono text-[#8fa3b8] flex justify-between">
-            <span>HIGH: {summary.alerts_by_severity.high || 1}</span>
+          <div className="mt-4 pt-3 border-t border-white/[0.05] text-[11px] font-mono text-slate-400 flex justify-between">
+            <span>HIGH: {summary.alerts_by_severity.high || 0}</span>
             <span>MED: {summary.alerts_by_severity.medium || 0}</span>
             <span>LOW: {summary.alerts_by_severity.low || 0}</span>
           </div>
         </div>
 
         {/* 3. Camera Fleet Status */}
-        <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#8fa3b8] mb-2">
-            <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
-              3. Camera Status
+        <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col justify-between hover:border-white/[0.15] transition-all duration-200 shadow-lg">
+          <div className="flex items-center justify-between text-slate-400 mb-3">
+            <span className="text-xs font-medium text-slate-400">
+              Camera Status
             </span>
-            <Video className="w-4 h-4 text-[#5ad67a]" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold text-[#5ad67a] font-mono">
-              {onlineCamsCount || 2}/{cameras.length || 3}
-              <span className="text-xs text-[#8fa3b8] font-normal ml-1.5">ONLINE</span>
-            </div>
-            <div className="text-xs font-mono px-2 py-0.5 rounded bg-[#14321c] text-[#5ad67a] font-bold">
-              HEALTHY
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#39D98A]">
+              <Video className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-[#243140]/60 text-[10px] font-mono text-[#8fa3b8] flex justify-between">
-            <span>RTSP / MP4 / WEBCAM</span>
-            <span className="text-[#3dd6c6]">30 FPS ACTIVE</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#39D98A] font-mono">
+              {onlineCamsCount}/{cameras.length}
+              <span className="text-xs font-sans text-slate-400 font-normal ml-2">Online</span>
+            </div>
+            <div
+              className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                cameras.length > 0 && onlineCamsCount === cameras.length
+                  ? "bg-emerald-500/10 text-[#39D98A] border-emerald-500/25"
+                  : cameras.length > 0
+                  ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                  : "bg-slate-800 text-slate-400 border-slate-700"
+              }`}
+            >
+              {cameras.length > 0 && onlineCamsCount === cameras.length
+                ? "Healthy"
+                : cameras.length > 0
+                ? "Degraded"
+                : "Standby"}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-white/[0.05] text-[11px] font-mono text-slate-400 flex justify-between">
+            <span>FLEET STATUS</span>
+            <span className="text-[#20D5C5] font-medium">{cameras.length > 0 ? "Streaming" : "Standby"}</span>
           </div>
         </div>
 
-        {/* 4. Quick Evidence & Forensic Archive */}
-        <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#8fa3b8] mb-2">
-            <span className="text-[11px] font-mono uppercase font-bold tracking-wider">
-              4. Evidence Packages
+        {/* 4. Quick Evidence Packages */}
+        <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 flex flex-col justify-between hover:border-white/[0.15] transition-all duration-200 shadow-lg">
+          <div className="flex items-center justify-between text-slate-400 mb-3">
+            <span className="text-xs font-medium text-slate-400">
+              Evidence Packages
             </span>
-            <FileSearch className="w-4 h-4 text-[#3dd6c6]" />
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
+              <FileSearch className="w-4 h-4" />
+            </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold text-[#3dd6c6] font-mono">
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#20D5C5] font-mono">
               {alerts.length}
-              <span className="text-xs text-[#8fa3b8] font-normal ml-1.5">CAPTURED</span>
+              <span className="text-xs font-sans text-slate-400 font-normal ml-2">Captured</span>
             </div>
             <Link
               to="/evidence"
-              className="text-xs font-mono text-[#3dd6c6] hover:underline flex items-center gap-0.5"
+              className="text-xs font-medium text-[#20D5C5] hover:text-[#39D98A] transition-colors flex items-center gap-1"
             >
-              Archive <ChevronRight className="w-3 h-3" />
+              Archive <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="mt-2 pt-2 border-t border-[#243140]/60 text-[10px] font-mono text-[#8fa3b8] flex justify-between">
+          <div className="mt-4 pt-3 border-t border-white/[0.05] text-[11px] font-mono text-slate-400 flex justify-between">
             <span>CRYPTOGRAPHIC AUDIT</span>
-            <span className="text-[#5ad67a]">READY</span>
+            <span className="text-[#39D98A] font-semibold">VERIFIED</span>
           </div>
         </div>
       </div>
 
-      {/* Main Command Workspace Grid: Left (Feeds + Map) | Right (Alert Triage + Evidence + Recent Incidents) */}
+      {/* Main Command Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Live Camera Preview (Item 7) & Tactical Sector Map (Item 8) */}
+        {/* Left Column: Live Tactical Camera Preview & Sector Map */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Item 7: Live Camera Preview */}
-          <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-              <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-                <Video className="w-4 h-4 text-[#3dd6c6]" />
-                7. Live Tactical Camera Preview & Inference
+          {/* Live Tactical Camera Preview & Inference */}
+          <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+              <span className="text-xs font-medium text-slate-300 flex items-center gap-2">
+                <Video className="w-4 h-4 text-[#20D5C5]" />
+                Live Tactical Camera Preview & Inference
               </span>
-              <span className="text-[10px] font-mono text-[#5ad67a] flex items-center gap-1.5">
+              <span className="text-[11px] font-mono text-[#39D98A] flex items-center gap-1.5 bg-[#39D98A]/10 px-2.5 py-0.5 rounded-full border border-[#39D98A]/20">
                 <Radio className="w-3 h-3 animate-ping" />
-                YOLOv8 DETECTIONS ON
+                YOLOv8 Inference Active
               </span>
             </div>
 
@@ -316,22 +380,22 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Item 8: Tactical Sector Map */}
-          <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-              <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#3dd6c6]" />
-                8. Sector Surveillance Grid (GIS Map)
+          {/* Sector Surveillance Grid (GIS Map) */}
+          <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+              <span className="text-xs font-medium text-slate-300 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#20D5C5]" />
+                Sector Surveillance Grid (GIS Map)
               </span>
               <Link
                 to="/map"
-                className="text-xs font-mono text-[#3dd6c6] hover:underline flex items-center gap-1"
+                className="text-xs font-medium text-[#20D5C5] hover:text-[#39D98A] transition-colors flex items-center gap-1"
               >
-                Expand Sector Map <ChevronRight className="w-3 h-3" />
+                Expand Sector Map <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="h-[300px] rounded-lg overflow-hidden">
+            <div className="h-[300px] rounded-xl overflow-hidden border border-white/[0.08]">
               <CameraMap
                 cameras={cameras}
                 activeCameraId={selectedCamera?.id}
@@ -342,44 +406,44 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Alert Queue (Items 1, 2, 3), Quick Evidence (Item 9), Recent Incidents (Item 5) */}
+        {/* Right Column: Active Alerts Queue, Quick Evidence Access, Recent Incidents */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Items 1, 2, 3: Active, Critical & High Alerts Queue */}
-          <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5 flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-              <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-[#ff5a5a]" />
+          {/* Active Alerts Queue */}
+          <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+              <span className="text-xs font-semibold text-white flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
                 Active Alerts Queue ({filteredAlerts.length})
               </span>
 
-              {/* Triage Filter Tabs */}
-              <div className="flex items-center gap-1 bg-[#0c141c] p-0.5 rounded-lg border border-[#243140] text-[10px] font-mono">
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1 bg-[#080D11]/70 p-1 rounded-xl border border-white/[0.06] text-xs">
                 <button
                   onClick={() => setAlertFilter("open")}
-                  className={`px-2 py-0.5 rounded ${
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
                     alertFilter === "open"
-                      ? "bg-[#16202b] text-[#3dd6c6] font-bold"
-                      : "text-[#8fa3b8] hover:text-[#e8eef5]"
+                      ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 font-semibold"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   Open
                 </button>
                 <button
                   onClick={() => setAlertFilter("high")}
-                  className={`px-2 py-0.5 rounded ${
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
                     alertFilter === "high"
-                      ? "bg-[#16202b] text-[#ff5a5a] font-bold"
-                      : "text-[#8fa3b8] hover:text-[#e8eef5]"
+                      ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 font-semibold"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   Critical ({criticalCount})
                 </button>
                 <button
                   onClick={() => setAlertFilter("all")}
-                  className={`px-2 py-0.5 rounded ${
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
                     alertFilter === "all"
-                      ? "bg-[#16202b] text-[#e8eef5] font-bold"
-                      : "text-[#8fa3b8] hover:text-[#e8eef5]"
+                      ? "bg-white/[0.06] text-white font-semibold"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   All
@@ -387,7 +451,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="max-h-[300px] overflow-y-auto space-y-2.5 pr-1">
+            <div className="max-h-[320px] overflow-y-auto space-y-3 pr-1">
               <AlertPanel
                 alerts={filteredAlerts}
                 onAcknowledge={handleAcknowledge}
@@ -401,29 +465,29 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Item 9: Quick Evidence Access */}
-          <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-              <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-                <FileSearch className="w-4 h-4 text-[#3dd6c6]" />
-                9. Quick Evidence Access
+          {/* Quick Evidence Access */}
+          <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
+              <span className="text-xs font-semibold text-white flex items-center gap-2">
+                <FileSearch className="w-4 h-4 text-[#20D5C5]" />
+                Quick Evidence Access
               </span>
               <Link
                 to="/evidence"
-                className="text-xs font-mono text-[#3dd6c6] hover:underline flex items-center gap-1"
+                className="text-xs font-medium text-[#20D5C5] hover:text-[#39D98A] transition-colors flex items-center gap-1"
               >
-                Inspect All <ChevronRight className="w-3 h-3" />
+                Inspect All <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             {selectedAlert ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-[#0c141c] border border-[#243140] flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-bold text-[#e8eef5]">
+                    <div className="text-xs font-semibold text-white">
                       {selectedAlert.title}
                     </div>
-                    <div className="text-[10px] font-mono text-[#8fa3b8] mt-0.5">
+                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                       {selectedAlert.camera_id} · {formatTime(selectedAlert.timestamp)}
                     </div>
                   </div>
@@ -431,68 +495,68 @@ export default function Dashboard() {
                 </div>
 
                 {/* Evidence Snapshot Placeholder or Media */}
-                <div className="p-4 rounded-lg bg-[#0c141c] border border-[#243140] text-center">
-                  <div className="flex flex-col items-center justify-center gap-2 py-2">
-                    <div className="w-10 h-10 rounded-full bg-[#16202b] border border-[#3dd6c6]/30 flex items-center justify-center text-[#3dd6c6]">
+                <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
+                  <div className="flex flex-col items-center justify-center gap-2 py-1">
+                    <div className="w-11 h-11 rounded-full bg-white/[0.04] border border-[#20D5C5]/30 flex items-center justify-center text-[#20D5C5] shadow-inner">
                       <Eye className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-mono text-[#e8eef5]">
-                      {selectedAlert.evidence_path || "Snapshot capture ref: /data/demo/snap_01.jpg"}
+                    <span className="text-xs font-mono font-medium text-slate-200">
+                      {selectedAlert.evidence_path || "Snapshot capture pending"}
                     </span>
-                    <span className="text-[10px] text-[#8fa3b8]">
-                      Bounding Box [x1: 0.18, y1: 0.22, x2: 0.42, y2: 0.78] · Target: Person
+                    <span className="text-[11px] text-slate-400 max-w-sm">
+                      {selectedAlert.trajectory || selectedAlert.reason || selectedAlert.description}
                     </span>
                   </div>
                 </div>
 
                 <Link
                   to="/evidence"
-                  className="w-full py-2 px-3 rounded-lg bg-[#16202b] hover:bg-[#3dd6c6]/20 text-[#3dd6c6] border border-[#3dd6c6]/30 font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-[#20D5C5]/15 text-[#20D5C5] hover:text-white border border-white/[0.08] hover:border-[#20D5C5]/30 text-xs font-medium flex items-center justify-center gap-2 transition-all shadow-sm"
                 >
-                  <FileSearch className="w-3.5 h-3.5" />
+                  <FileSearch className="w-4 h-4" />
                   <span>Open Full Forensic Package in Archive</span>
                 </Link>
               </div>
             ) : (
-              <div className="p-6 text-center text-[#8fa3b8] font-mono text-xs">
+              <div className="p-6 text-center text-slate-400 text-xs font-medium">
                 Select an alert above to inspect attached evidence.
               </div>
             )}
           </div>
 
-          {/* Item 5: Recent Incidents Stream */}
-          <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-3">
-              <span className="text-xs font-mono font-bold uppercase text-[#8fa3b8] flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[#3dd6c6]" />
-                5. Recent Incidents (Behavior Engine)
+          {/* Recent Incidents (Behavior Engine) */}
+          <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-3">
+              <span className="text-xs font-semibold text-white flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#20D5C5]" />
+                Recent Incidents (Behavior Engine)
               </span>
-              <span className="text-[10px] font-mono text-[#8fa3b8]">
-                REAL-TIME TELEMETRY
+              <span className="text-[10px] font-mono text-slate-400 uppercase">
+                Real-Time Telemetry
               </span>
             </div>
 
-            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
               {events.length === 0 ? (
-                <div className="p-4 text-center text-xs text-[#8fa3b8] font-mono">
+                <div className="p-4 text-center text-xs text-slate-400 font-mono">
                   No behavioural events recorded.
                 </div>
               ) : (
                 events.map((event) => (
                   <div
                     key={event.id}
-                    className="p-2.5 rounded-lg bg-[#0c141c] border border-[#243140] flex items-center justify-between gap-3 text-xs"
+                    className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between gap-3 text-xs hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="min-w-0">
-                      <div className="font-semibold text-[#e8eef5] truncate">
+                      <div className="font-medium text-slate-200 truncate">
                         {event.description}
                       </div>
-                      <div className="text-[10px] font-mono text-[#8fa3b8] mt-0.5">
+                      <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                         {event.camera_id} · {event.kind} · {formatTime(event.timestamp)}
                       </div>
                     </div>
                     <div className="shrink-0 font-mono text-right">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#16202b] text-[#ff5a5a] border border-[#ff5a5a]/30">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                         RISK {(event.risk_score * 100).toFixed(0)}%
                       </span>
                     </div>
@@ -504,70 +568,70 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Item 10: Alert Trend Chart (Clean, focused Recharts visualization without clutter) */}
-      <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 sm:p-5">
-        <div className="flex items-center justify-between pb-3 border-b border-[#243140] mb-4">
+      {/* Alert Trend Chart */}
+      <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4 gap-2">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#3dd6c6]" />
-            <span className="text-xs font-mono font-bold uppercase text-[#e8eef5]">
-              10. Shift Alert & Intrusion Frequency Trend (Last 8 Hours)
+            <TrendingUp className="w-4 h-4 text-[#20D5C5]" />
+            <span className="text-xs font-semibold text-white">
+              Shift Alert & Intrusion Frequency Trend (Last 8 Hours)
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[10px] font-mono">
-            <span className="flex items-center gap-1.5 text-[#3dd6c6]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#3dd6c6]" />
+          <div className="flex items-center gap-4 text-xs">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#20D5C5]" />
               Total Alerts
             </span>
-            <span className="flex items-center gap-1.5 text-[#ff5a5a]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5a5a]" />
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
               Zone Intrusions
             </span>
           </div>
         </div>
 
-        <div className="h-44 w-full">
+        <div className="h-48 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mockTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="alertGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3dd6c6" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#3dd6c6" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#20D5C5" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#20D5C5" stopOpacity={0.0} />
                 </linearGradient>
                 <linearGradient id="intrusionGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff5a5a" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#ff5a5a" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#ff4d4d" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#ff4d4d" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#243140" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="time"
-                stroke="#8fa3b8"
+                stroke="#64748b"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: "#243140" }}
+                axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
               />
               <YAxis
-                stroke="#8fa3b8"
+                stroke="#64748b"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: "#243140" }}
+                axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
                 allowDecimals={false}
               />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#101820",
-                  borderColor: "#243140",
-                  borderRadius: "8px",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  borderRadius: "12px",
                   fontSize: "11px",
-                  color: "#e8eef5",
-                  fontFamily: "monospace",
+                  color: "#F1F5F9",
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.6)",
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="alerts"
-                stroke="#3dd6c6"
+                stroke="#20D5C5"
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#alertGrad)"
@@ -575,7 +639,7 @@ export default function Dashboard() {
               <Area
                 type="monotone"
                 dataKey="intrusions"
-                stroke="#ff5a5a"
+                stroke="#ff4d4d"
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#intrusionGrad)"

@@ -8,22 +8,6 @@ interface DetectionOverlayProps {
   showTracks?: boolean;
 }
 
-// Sample detections for camera feeds when live detections are streaming or in demo mode
-const defaultSampleDetections: Detection[] = [
-  {
-    track_id: 1,
-    label: "person",
-    confidence: 0.88,
-    bbox: { x1: 0.22, y1: 0.25, x2: 0.38, y2: 0.72 },
-  },
-  {
-    track_id: 2,
-    label: "person",
-    confidence: 0.79,
-    bbox: { x1: 0.42, y1: 0.30, x2: 0.54, y2: 0.68 },
-  },
-];
-
 export default function DetectionOverlay({
   detections,
   showZone = true,
@@ -31,8 +15,7 @@ export default function DetectionOverlay({
   showTracks = true,
 }: DetectionOverlayProps) {
   const activeDetections = useMemo(() => {
-    if (detections && detections.length > 0) return detections;
-    return defaultSampleDetections;
+    return detections || [];
   }, [detections]);
 
   return (
@@ -40,7 +23,7 @@ export default function DetectionOverlay({
       {/* Zone Overlay Support: Restricted Exclusion Boundary */}
       {showZone && (
         <div
-          className="absolute border-2 border-dashed border-[#ff5a5a]/60 bg-[#ff5a5a]/5 rounded-sm"
+          className="absolute border-2 border-dashed border-rose-500/60 bg-rose-500/[0.04] rounded-lg transition-all duration-300"
           style={{
             left: "15%",
             top: "18%",
@@ -48,8 +31,9 @@ export default function DetectionOverlay({
             height: "68%",
           }}
         >
-          <div className="absolute -top-5 left-2 px-2 py-0.5 rounded bg-[#3a1515] border border-[#ff5a5a]/50 text-[10px] font-mono font-bold text-[#ff5a5a] uppercase tracking-wider shadow-sm">
-            ⚠ {zoneName}
+          <div className="absolute -top-3.5 left-3 px-2.5 py-0.5 rounded-full bg-[#080D11]/90 border border-rose-500/50 text-[10px] font-mono font-semibold text-rose-400 uppercase tracking-wider shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+            {zoneName}
           </div>
         </div>
       )}
@@ -65,24 +49,24 @@ export default function DetectionOverlay({
         return (
           <div
             key={index}
-            className="absolute border-2 border-[#3dd6c6] bg-[#3dd6c6]/10 shadow-[0_0_8px_rgba(61,214,198,0.4)] transition-all duration-150"
+            className="absolute border-2 border-[#20D5C5] bg-[#20D5C5]/10 shadow-[0_0_12px_rgba(32,213,197,0.3)] transition-all duration-150 rounded-sm"
             style={{ left, top, width, height }}
           >
-            {/* Corner crosshairs */}
-            <span className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-[#3dd6c6]" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2 border-[#3dd6c6]" />
-            <span className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2 border-[#3dd6c6]" />
-            <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-[#3dd6c6]" />
+            {/* Corner brackets */}
+            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#20D5C5]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#20D5C5]" />
+            <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-[#20D5C5]" />
+            <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-[#20D5C5]" />
 
             {/* Target Label, Confidence & Track ID badge */}
-            <div className="absolute -top-6 left-0 px-1.5 py-0.5 rounded bg-[#101820] border border-[#3dd6c6] text-[10px] font-mono text-[#3dd6c6] font-bold whitespace-nowrap flex items-center gap-1.5 shadow">
+            <div className="absolute -top-6 left-0 px-2 py-0.5 rounded-md bg-[#080D11]/95 border border-[#20D5C5]/60 text-[10px] font-mono text-[#20D5C5] font-semibold whitespace-nowrap flex items-center gap-1.5 shadow-xl backdrop-blur-md">
               {showTracks && det.track_id !== undefined && (
-                <span className="text-[#e8eef5] bg-[#16202b] px-1 rounded text-[9px]">
-                  TRK #{det.track_id}
+                <span className="text-slate-300 bg-white/[0.08] px-1 rounded text-[9px]">
+                  ID #{det.track_id}
                 </span>
               )}
-              <span className="uppercase">{det.label}</span>
-              <span className="text-[9px] text-[#5ad67a]">
+              <span className="uppercase tracking-wide font-bold">{det.label}</span>
+              <span className="text-[9px] text-[#39D98A] font-bold">
                 {(det.confidence * 100).toFixed(0)}%
               </span>
             </div>

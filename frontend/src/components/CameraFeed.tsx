@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import DetectionOverlay from "./DetectionOverlay";
+import { useLiveStream, StreamMode } from "../hooks/useLiveStream";
 import type { Camera } from "../types/camera";
 import {
   Video,
@@ -11,7 +12,10 @@ import {
   Crosshair,
   MapPin,
   Clock,
-  Compass
+  Compass,
+  RefreshCw,
+  Sliders,
+  AlertCircle,
 } from "lucide-react";
 
 interface CameraFeedProps {
@@ -35,6 +39,7 @@ export default function CameraFeed({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDetections, setShowDetections] = useState(true);
   const [showZone, setShowZone] = useState(true);
+  const [showStreamSettings, setShowStreamSettings] = useState(false);
 
   const activeCamera = camera ?? cameras[0] ?? {
     id: "cam-north-01",
@@ -44,9 +49,23 @@ export default function CameraFeed({
     source: "0",
     latitude: 34.1526,
     longitude: 77.5771,
+    webrtc_url: "/api/cameras/cam-north-01/webrtc",
+    hls_url: "/api/cameras/cam-north-01/stream.m3u8",
   };
 
   const isOnline = activeCamera.status === "online";
+
+  // Stream state & integration hook
+  const {
+    videoRef,
+    connectionStatus,
+    streamMode,
+    setStreamMode,
+    errorMessage,
+    streamLatency,
+    retryConnection,
+    isLiveFeed,
+  } = useLiveStream(activeCamera, { preferredMode: "auto" });
 
   // Live timestamp timer
   useEffect(() => {
@@ -84,37 +103,88 @@ export default function CameraFeed({
     }
   };
 
+  // Status Badge Rendering Helper
+  const renderConnectionBadge = () => {
+    if (!isOnline) {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-slate-800/60 text-slate-400 border border-slate-700/50 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+          Offline
+        </span>
+      );
+    }
+
+    if (connectionStatus === "connecting") {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1.5 animate-pulse">
+          <RefreshCw className="w-3 h-3 animate-spin" />
+          Connecting...
+        </span>
+      );
+    }
+
+    if (connectionStatus === "live_webrtc") {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-emerald-500/10 text-[#39D98A] border border-emerald-500/25 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] animate-ping" />
+          WebRTC Live ({streamLatency}ms)
+        </span>
+      );
+    }
+
+    if (connectionStatus === "live_hls") {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-[#20D5C5]/10 text-[#20D5C5] border border-[#20D5C5]/25 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#20D5C5]" />
+          HLS Stream ({streamLatency}ms)
+        </span>
+      );
+    }
+
+    // Default Fallback
+    return (
+      <span
+        className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold uppercase bg-white/[0.03] text-slate-400 border border-white/[0.06] flex items-center gap-1.5 cursor-pointer hover:bg-white/[0.08] hover:text-slate-200 transition-colors"
+        onClick={retryConnection}
+        title="Live feed currently disconnected. Click to retry connecting."
+      >
+        <Radio className="w-3 h-3 text-slate-400" />
+        Feed Standby
+      </span>
+    );
+  };
+
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col bg-[#101820] border border-[#243140] rounded-xl overflow-hidden transition-all ${
+      className={`flex flex-col bg-[#101820] border border-white/[0.07] rounded-2xl overflow-hidden shadow-xl transition-all ${
         isFullscreen ? "fixed inset-0 z-50 p-6 rounded-none border-none" : "p-4 sm:p-5"
       }`}
     >
-      {/* Top Header: Camera Name, Location, Status, and Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#243140] mb-3">
+      {/* Top Header: Camera Identity, Location, Status, and Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-white/[0.06] mb-3">
         {/* Left: Camera Identity & Coordinates */}
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[#0c141c] border border-[#243140] text-[#3dd6c6]">
-            <Video className="w-5 h-5" />
+          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[#20D5C5]">
+            <Video className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-[#e8eef5] uppercase">
+              <span className="text-sm font-semibold text-white">
                 {activeCamera.name}
               </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#16202b] text-[#8fa3b8]">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] text-slate-400 border border-white/[0.04]">
                 {activeCamera.id}
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[11px] font-mono text-[#8fa3b8] mt-0.5">
-              <span className="flex items-center gap-1 text-[#3dd6c6]">
+            <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 mt-0.5">
+              <span className="flex items-center gap-1 text-[#20D5C5]">
                 <Compass className="w-3 h-3" />
                 Sector: {activeCamera.sector?.toUpperCase() || "NORTH"}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
+                <MapPin className="w-3 h-3 text-slate-500" />
                 {activeCamera.latitude ? `${activeCamera.latitude.toFixed(4)}°N, ${activeCamera.longitude?.toFixed(4)}°E` : "34.1526°N, 77.5771°E"}
               </span>
             </div>
@@ -124,15 +194,30 @@ export default function CameraFeed({
         {/* Right: Telemetry & Controls Toolbar */}
         <div className="flex items-center gap-2">
           {showControls && (
-            <div className="flex items-center gap-1.5 bg-[#0c141c] p-1 rounded-lg border border-[#243140]">
+            <div className="flex items-center gap-1 bg-[#080D11]/60 p-1 rounded-xl border border-white/[0.06]">
+              {/* Stream Settings / Protocol Picker */}
+              <button
+                type="button"
+                onClick={() => setShowStreamSettings(!showStreamSettings)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                  showStreamSettings
+                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                }`}
+                title="Configure Live Stream Source / Fallback"
+              >
+                <Sliders className="w-3 h-3" />
+                <span className="hidden sm:inline">Stream Mode</span>
+              </button>
+
               {/* Toggle Detections */}
               <button
                 type="button"
                 onClick={() => setShowDetections(!showDetections)}
-                className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   showDetections
-                    ? "bg-[#16202b] text-[#3dd6c6] border border-[#3dd6c6]/40 font-bold"
-                    : "text-[#8fa3b8] hover:text-[#e8eef5]"
+                    ? "bg-[#20D5C5]/15 text-[#20D5C5] border border-[#20D5C5]/30 shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
                 title="Toggle AI Bounding Boxes"
               >
@@ -144,10 +229,10 @@ export default function CameraFeed({
               <button
                 type="button"
                 onClick={() => setShowZone(!showZone)}
-                className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   showZone
-                    ? "bg-[#16202b] text-[#ff5a5a] border border-[#ff5a5a]/40 font-bold"
-                    : "text-[#8fa3b8] hover:text-[#e8eef5]"
+                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
                 title="Toggle Restricted Zone Overlay"
               >
@@ -159,7 +244,7 @@ export default function CameraFeed({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-1.5 rounded text-[#8fa3b8] hover:text-[#3dd6c6] hover:bg-[#16202b] transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-[#20D5C5] hover:bg-white/[0.04] transition-colors"
                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -167,42 +252,71 @@ export default function CameraFeed({
             </div>
           )}
 
-          {/* Status Badge */}
-          <span
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-              isOnline
-                ? "bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/40"
-                : "bg-[#2a2a2a] text-[#8fa3b8]"
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-[#5ad67a] animate-ping" : "bg-[#8fa3b8]"}`} />
-            {isOnline ? "LIVE FEED" : "OFFLINE"}
-          </span>
+          {/* Connection Status Badge */}
+          {renderConnectionBadge()}
         </div>
       </div>
 
-      {/* Camera Switcher Strip (if multiple cameras provided) */}
+      {/* Stream Mode Configuration Drawer */}
+      {showStreamSettings && (
+        <div className="mb-3.5 p-3 rounded-xl bg-[#0C141C] border border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">STREAM PROTOCOL:</span>
+            {(["auto", "webrtc", "hls", "mock"] as StreamMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setStreamMode(mode)}
+                className={`px-2.5 py-1 rounded-lg uppercase font-semibold text-[11px] transition-all border ${
+                  streamMode === mode
+                    ? "bg-[#20D5C5] text-[#080D11] border-[#20D5C5] shadow-sm shadow-[#20D5C5]/20 font-bold"
+                    : "bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.06]"
+                }`}
+              >
+                {mode === "auto" ? "Auto (WebRTC)" : mode === "mock" ? "Synthetic Mock" : mode}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {errorMessage && (
+              <span className="text-[10px] text-amber-400 flex items-center gap-1 max-w-sm truncate" title={errorMessage}>
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                {errorMessage}
+              </span>
+            )}
+            <button
+              onClick={retryConnection}
+              className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/[0.08] text-[11px] flex items-center gap-1 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3 text-[#20D5C5]" />
+              <span>Retry Connect</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Switcher Strip */}
       {cameras.length > 1 && !isFullscreen && (
-        <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 mb-3.5 overflow-x-auto pb-1 scrollbar-none">
           {cameras.map((c) => {
             const isSelected = c.id === activeCamera.id;
             return (
               <button
                 key={c.id}
                 onClick={() => onSelectCamera?.(c)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all flex items-center gap-2 border ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
                   isSelected
-                    ? "bg-[#16202b] text-[#3dd6c6] border-[#3dd6c6]/50 font-bold shadow-sm"
-                    : "bg-[#0c141c] text-[#8fa3b8] hover:bg-[#101820] hover:text-[#e8eef5] border-[#243140]"
+                    ? "bg-[#20D5C5]/10 text-[#20D5C5] border-[#20D5C5]/30 font-semibold shadow-sm"
+                    : "bg-white/[0.02] text-slate-400 hover:bg-white/[0.05] hover:text-white border-white/[0.06]"
                 }`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${
-                    c.status === "online" ? "bg-[#5ad67a]" : "bg-[#ff5a5a]"
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    c.status === "online" ? "bg-[#39D98A]" : "bg-rose-500"
                   }`}
                 />
                 <span>{c.name}</span>
-                <span className="text-[10px] opacity-60 uppercase">[{c.sector}]</span>
+                <span className="text-[10px] font-mono text-slate-500 uppercase">[{c.sector}]</span>
               </button>
             );
           })}
@@ -210,34 +324,57 @@ export default function CameraFeed({
       )}
 
       {/* Main Video / Live-Feed Viewport */}
-      <div className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#070b10] rounded-lg overflow-hidden border border-[#243140] flex items-center justify-center ${isFullscreen ? "h-full" : ""}`}>
-        {/* Tactical Scanlines & Gradient */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(61,214,198,0.04)_0%,rgba(7,11,16,0.9)_100%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 pointer-events-none opacity-25 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.5)_3px)] z-0" />
+      <div className={`feed relative flex-1 min-h-[280px] sm:min-h-[420px] bg-[#080D11] rounded-xl overflow-hidden border border-white/[0.08] flex items-center justify-center ${isFullscreen ? "h-full" : ""}`}>
+        {/* Real Live HTML5 Video Player */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+            isLiveFeed ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+          }`}
+        />
+
+        {/* Fallback Synthetic Mock Background */}
+        {!isLiveFeed && (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(32,213,197,0.04)_0%,rgba(8,13,17,0.98)_100%)] pointer-events-none z-0" />
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.5)_3px)] z-0" />
+          </>
+        )}
 
         {/* Live HUD: Top Left Stream Diagnostics */}
-        <div className="absolute top-3 left-4 font-mono text-[11px] text-[#3dd6c6] flex flex-col gap-1 pointer-events-none z-20">
-          <div className="flex items-center gap-2 font-bold tracking-wider">
-            <Radio className="w-3.5 h-3.5 text-[#ff5a5a] animate-pulse" />
-            <span>CCTV STREAM · 1080P @ 30.0 FPS</span>
+        <div className="absolute top-3 left-4 font-mono text-[11px] text-[#20D5C5] flex flex-col gap-1 pointer-events-none z-20">
+          <div className="flex items-center gap-2 font-medium tracking-wide bg-[#080D11]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
+            <Radio className={`w-3 h-3 ${isLiveFeed ? "text-[#39D98A] animate-pulse" : "text-slate-500"}`} />
+            <span>
+              {isLiveFeed
+                ? `${connectionStatus === "live_webrtc" ? "WEBRTC REALTIME" : "HLS BROADCAST"} · 1080P @ 30.0 FPS`
+                : "FEED STANDBY · AWAITING RTSP SIGNAL"}
+            </span>
           </div>
-          <div className="text-[10px] text-[#8fa3b8]">
-            BITRATE: 4.2 MBPS · CODEC: H.264 · LATENCY: 22MS
+          <div className="text-[10px] text-slate-400 px-2.5">
+            {isLiveFeed
+              ? `LATENCY: ${streamLatency}MS · BUFFER: OPTIMAL · CARRIER: LOCKED`
+              : "NO ACTIVE INPUT · CARRIER: DISCONNECTED"}
           </div>
         </div>
 
         {/* Live HUD: Top Right Timestamp */}
         <div className="absolute top-3 right-4 font-mono text-right pointer-events-none z-20">
-          <div className="text-xs font-semibold text-[#e8eef5] flex items-center gap-1.5 justify-end">
-            <Clock className="w-3 h-3 text-[#3dd6c6]" />
+          <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#080D11]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
+            <Clock className="w-3 h-3 text-[#20D5C5]" />
             <span>{currentTime}</span>
           </div>
-          <div className="text-[10px] text-[#8fa3b8]">FEED AUTH: CRYPTO-SIGNED</div>
+          <div className="text-[10px] text-slate-400 px-2.5 pt-0.5">
+            {isLiveFeed ? "FEED: AUTHENTICATED STREAM" : "FEED AUTH: CRYPTO-SIGNED"}
+          </div>
         </div>
 
-        {/* Live HUD: Center Reticle */}
-        <div className="absolute inset-0 m-auto w-12 h-12 border border-[#3dd6c6]/20 rounded-full pointer-events-none flex items-center justify-center">
-          <div className="w-1.5 h-1.5 bg-[#3dd6c6]/40 rounded-full" />
+        {/* Live HUD: Center Subtle Reticle */}
+        <div className="absolute inset-0 m-auto w-12 h-12 border border-[#20D5C5]/20 rounded-full pointer-events-none flex items-center justify-center">
+          <div className="w-1.5 h-1.5 bg-[#20D5C5]/40 rounded-full" />
         </div>
 
         {/* AI Overlays (Detection Bounding Boxes + Zone) */}
@@ -252,25 +389,34 @@ export default function CameraFeed({
             )}
 
             {/* Bottom Left AI Telemetry */}
-            <div className="absolute bottom-3 left-4 z-20 font-mono text-[10px] text-[#5ad67a] flex items-center gap-2 bg-[#0c141c]/90 px-3 py-1.5 rounded-lg border border-[#5ad67a]/40 backdrop-blur">
-              <ShieldAlert className="w-3.5 h-3.5 text-[#ff5a5a]" />
-              <span>YOLOv8 + SIMPLE-TRACKER: 2 ACTIVE TARGETS</span>
+            <div className="absolute bottom-3 left-4 z-20 font-mono text-[10px] text-[#39D98A] flex items-center gap-2 bg-[#080D11]/90 px-3 py-1.5 rounded-lg border border-[#39D98A]/30 backdrop-blur-md shadow-lg">
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+              <span>YOLOv8 + B-SORT: 2 ACTIVE TARGETS</span>
             </div>
           </>
         ) : (
-          <div className="text-center p-8 text-[#8fa3b8] font-mono text-xs flex flex-col items-center gap-3 z-10">
-            <div className="w-12 h-12 rounded-full bg-[#16202b] border border-[#ff5a5a]/40 flex items-center justify-center text-[#ff5a5a] text-lg font-bold">
+          <div className="text-center p-8 text-slate-400 font-mono text-xs flex flex-col items-center gap-3 z-10">
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg font-bold">
               !
             </div>
-            <div className="text-sm font-bold text-[#e8eef5]">FEED CARRIER SIGNAL LOST</div>
-            <div>Camera source ({activeCamera.source}) is currently offline or unreachable.</div>
-            <div className="text-[10px] text-[#8fa3b8]/60">CHECK RTSP STREAM ROUTE OR HARDWARE CONNECTION</div>
+            <div className="text-sm font-semibold text-white">FEED CARRIER SIGNAL LOST</div>
+            <div className="text-slate-400">Camera source ({activeCamera.source}) is currently offline or unreachable.</div>
+            <div className="text-[10px] text-slate-500">CHECK RTSP STREAM ROUTE OR HARDWARE CONNECTION</div>
           </div>
         )}
 
         {/* Bottom Right Source Tag */}
-        <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-[#8fa3b8] bg-[#0c141c]/90 px-2.5 py-1 rounded border border-[#243140]">
-          SRC: {activeCamera.source}
+        <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#080D11]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
+          <span>SRC: {activeCamera.source}</span>
+          {!isLiveFeed && isOnline && (
+            <button
+              onClick={retryConnection}
+              className="text-[#20D5C5] hover:text-[#39D98A] flex items-center gap-1 font-semibold transition-colors"
+            >
+              <RefreshCw className="w-2.5 h-2.5" />
+              Connect Live
+            </button>
+          )}
         </div>
       </div>
     </div>

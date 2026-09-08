@@ -8,7 +8,6 @@ import {
   ChevronRight,
   FileSearch,
   Activity,
-  AlertOctagon,
   ShieldCheck
 } from "lucide-react";
 
@@ -54,90 +53,94 @@ export default function AlertCard({
   return (
     <article
       onClick={() => onSelect?.(alert)}
-      className={`p-4 rounded-xl border transition-all cursor-pointer ${
+      className={`relative p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
         isSelected
-          ? "bg-[#16202b] border-[#3dd6c6]/60 shadow-lg shadow-[#3dd6c6]/5"
-          : "bg-[#101820] border-[#243140] hover:border-[#3dd6c6]/40 hover:bg-[#16202b]/40"
-      } ${
-        normSeverity === "CRITICAL"
-          ? "border-l-4 border-l-[#ff4d4d]"
-          : normSeverity === "HIGH"
-          ? "border-l-4 border-l-[#ff5a5a]"
-          : normSeverity === "SUSPICIOUS"
-          ? "border-l-4 border-l-[#f5b942]"
-          : "border-l-4 border-l-[#5ad67a]"
+          ? "bg-[#141E28] border-[#20D5C5]/40 shadow-lg shadow-black/40"
+          : "bg-[#101820] border-white/[0.06] hover:border-white/[0.12] hover:bg-[#141E28]/50"
       }`}
     >
+      {/* Subtle indicator strip on left */}
+      <span
+        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
+          normSeverity === "CRITICAL"
+            ? "bg-rose-500"
+            : normSeverity === "HIGH"
+            ? "bg-orange-500"
+            : normSeverity === "SUSPICIOUS"
+            ? "bg-amber-500"
+            : "bg-[#39D98A]"
+        }`}
+      />
+
       {/* Top Row: Severity, Risk Score, Status, Timestamp */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pl-2">
         <div className="flex items-center gap-2">
           <RiskBadge severity={normSeverity} />
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0c141c] border border-[#243140] text-[#e8eef5]">
-            RISK: <span className={normSeverity === "CRITICAL" || normSeverity === "HIGH" ? "text-[#ff5a5a] font-bold" : "text-[#5ad67a]"}>{(riskScore * 100).toFixed(0)}%</span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-300">
+            Risk <span className={normSeverity === "CRITICAL" || normSeverity === "HIGH" ? "text-rose-400 font-semibold" : "text-[#39D98A] font-semibold"}>{(riskScore * 100).toFixed(0)}%</span>
           </span>
           <span
-            className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${
+            className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${
               isOpen
-                ? "bg-[#3a1515] text-[#ff5a5a] border border-[#ff5a5a]/30"
-                : "bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/30"
+                ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
             }`}
           >
             {alert.status}
           </span>
         </div>
 
-        <span className="text-[10px] font-mono text-[#8fa3b8] flex items-center gap-1">
-          <Clock className="w-3 h-3 text-[#3dd6c6]" />
+        <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+          <Clock className="w-3 h-3 text-[#20D5C5]" />
           {formatTime(alert.timestamp)}
         </span>
       </div>
 
       {/* Alert Title & Reason Summary */}
-      <div className="mb-2">
-        <h3 className="text-sm font-bold text-[#e8eef5] line-clamp-1 mb-1 flex items-center gap-1.5">
-          {normSeverity === "CRITICAL" && <AlertOctagon className="w-4 h-4 text-[#ff4d4d] shrink-0" />}
+      <div className="mb-2.5 pl-2">
+        <h3 className="text-sm font-semibold text-white line-clamp-1 mb-1">
           {alert.title}
         </h3>
-        <p className="text-xs text-[#8fa3b8] line-clamp-2 leading-relaxed">
+        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
           {alert.description || alert.reason || "Autonomous behavior engine flag raised from live video surveillance."}
         </p>
       </div>
 
-      {/* Metadata Row: Event Type, Camera ID, Evidence Availability */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#243140]/60 text-[10px] font-mono">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[#3dd6c6]">
+      {/* Metadata Row: Event Type, Camera ID, Evidence Availability, Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/[0.05] text-[11px] pl-2">
+        <div className="flex flex-wrap items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-1 font-mono text-[#20D5C5] bg-white/[0.02] px-2 py-0.5 rounded-md border border-white/[0.04]">
             <Camera className="w-3 h-3" />
             {alert.camera_id}
           </span>
 
-          <span className="flex items-center gap-1 text-[#8fa3b8] bg-[#0c141c] px-2 py-0.5 rounded border border-[#243140]">
-            <Activity className="w-3 h-3 text-[#f5b942]" />
+          <span className="flex items-center gap-1 font-mono text-slate-400 bg-white/[0.02] px-2 py-0.5 rounded-md border border-white/[0.04]">
+            <Activity className="w-3 h-3 text-amber-400/80" />
             {eventType}
           </span>
 
           <span
-            className={`flex items-center gap-1 px-2 py-0.5 rounded border ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono ${
               hasEvidence
-                ? "bg-[#14321c] text-[#5ad67a] border-[#5ad67a]/30"
-                : "bg-[#0c141c] text-[#8fa3b8] border-[#243140]"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : "bg-white/[0.02] text-slate-400 border-white/[0.04]"
             }`}
           >
             {hasEvidence ? (
               <>
-                <ShieldCheck className="w-3 h-3 text-[#5ad67a]" />
-                <span>EVIDENCE READY</span>
+                <ShieldCheck className="w-3 h-3 text-[#39D98A]" />
+                <span>Evidence Ready</span>
               </>
             ) : (
               <>
-                <FileSearch className="w-3 h-3 text-[#8fa3b8]" />
-                <span>NO EVIDENCE CLIP</span>
+                <FileSearch className="w-3 h-3 text-slate-400" />
+                <span>No Evidence Clip</span>
               </>
             )}
           </span>
         </div>
 
-        {/* Quick Action Button */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           {isOpen && onAcknowledge && (
             <button
@@ -145,7 +148,7 @@ export default function AlertCard({
                 e.stopPropagation();
                 onAcknowledge(alert.id);
               }}
-              className="px-2.5 py-1 rounded bg-[#16202b] hover:bg-[#5ad67a]/20 text-[#5ad67a] border border-[#5ad67a]/40 font-bold transition-all flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg bg-[#39D98A]/10 hover:bg-[#39D98A]/20 text-[#39D98A] border border-[#39D98A]/30 text-xs font-medium transition-all flex items-center gap-1 shadow-sm"
               title="Acknowledge this incident"
             >
               <Check className="w-3 h-3" />
@@ -153,8 +156,8 @@ export default function AlertCard({
             </button>
           )}
 
-          <span className="text-[#8fa3b8] hover:text-[#3dd6c6] flex items-center">
-            Inspect <ChevronRight className="w-3 h-3" />
+          <span className="text-xs font-medium text-slate-400 hover:text-[#20D5C5] transition-colors flex items-center gap-0.5">
+            Inspect <ChevronRight className="w-3.5 h-3.5" />
           </span>
         </div>
       </div>
