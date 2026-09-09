@@ -140,7 +140,16 @@ function scenarioFromFilename(name: string): DemoScenario | null {
   if (n.includes("border") || n.includes("cross") || n.includes("fence")) return "border-crossing";
   if (n.includes("group")) return "group-movement";
   if (n.includes("animal")) return "animal";
-  if (n.includes("night")) return "night";
+  if (
+    n.includes("night") ||
+    n.includes("thermal") ||
+    n.includes("nvg") ||
+    n.includes("lowlight") ||
+    n.includes("low-light") ||
+    /(^|[^a-z])ir([^a-z]|$)/.test(n)
+  ) {
+    return "night";
+  }
   if (n.includes("loiter") || n.includes("walk")) return "loitering";
   return null;
 }
@@ -165,7 +174,7 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
         ...cam,
         status: "online",
         videoUrl: runtime[cam.id]?.videoUrl ?? null,
-        scenario: runtime[cam.id]?.threat ?? runtime[cam.id]?.scenario ?? cam.scenario,
+        scenario: runtime[cam.id]?.scenario ?? cam.scenario,
         source: runtime[cam.id]?.videoUrl ? cam.id : cam.source,
       })),
     [runtime],
@@ -189,7 +198,7 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
 
       if (meta?.vision) {
         const cur = runtimeRef.current[cameraId];
-        const nextThreat = meta.threat ?? cur?.threat ?? null;
+        const nextThreat = meta.threat ?? null;
         const shouldWriteRuntime =
           !cur ||
           cur.threat !== nextThreat ||
@@ -204,7 +213,6 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
               [cameraId]: {
                 ...existing,
                 threat: nextThreat,
-                scenario: nextThreat ?? existing.scenario,
                 night: Boolean(meta.night),
               },
             };
@@ -233,7 +241,6 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
             if (!key.startsWith(`${cameraId}:`)) continue;
             if (key.includes(":script:")) continue;
             if (key.includes(":restricted_zone_entry")) continue;
-            if (key.includes(":group_movement")) continue;
             if (active.has(key)) continue;
             openEpisodes.current.delete(key);
             closeAlertIds.push(rec.alertId);

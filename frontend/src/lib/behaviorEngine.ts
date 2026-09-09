@@ -15,9 +15,11 @@ import {
 export type CueKind = DemoScenario | "night";
 
 const LOITER_MS = 30_000;
-const GROUP_MIN = 2;
-const GROUP_HOLD_MS = 500;
-const GROUP_MISS_MS = 800;
+const GROUP_MIN = 3;
+const GROUP_HOLD_MS = 1200;
+const GROUP_MISS_MS = 600;
+const TRACK_TTL_MS = 750;
+const DRAW_TTL_MS = 420;
 
 export function episodeKey(cameraId: string, kind: string, trackId?: number | string | null) {
   const normalized =
@@ -137,6 +139,17 @@ function inPerimeterBand(bbox: Detection["bbox"]) {
 
 function nearAnyFence(bbox: Detection["bbox"], fences: FenceLine[]) {
   return fences.some((f) => bboxNearFence(bbox, f));
+}
+
+/** Distinct people, not the same body split into overlapping / ghost boxes. */
+function separatedPeople(tracks: Track[], minDist = 0.1) {
+  const kept: { x: number; y: number }[] = [];
+  for (const track of tracks) {
+    const c = center(track.bbox);
+    if (kept.some((p) => Math.hypot(p.x - c.x, p.y - c.y) < minDist)) continue;
+    kept.push(c);
+  }
+  return kept.length;
 }
 
 function crossedFence(window: Sample[], fence: FenceLine) {
@@ -338,7 +351,7 @@ export class CameraAnalyzer {
     return track.samples.map((s) => ({ x: s.x, y: s.y }));
   }
 
-  update(raw: Detection[], now: number, scene?: { night?: boolean; fence?: FenceLine | null; fences?: FenceLine[] }): AnalyzerFrame {
+  update(raw: Detection[], now: number, scene?: { night?: boolean; scenario?: DemoScenario; fence?: FenceLine | null; fences?: FenceLine[] }): AnalyzerFrame {
     let fenceList: FenceLine[] = this.fence ? [this.fence] : [];
     if (scene && "fences" in scene) {
       fenceList = (scene.fences ?? []).map((f) => resolveFence(f));
@@ -349,16 +362,20 @@ export class CameraAnalyzer {
       fenceList = fence ? [fence] : [];
     }
     this.matchTracks(raw, now);
-    this.tracks = this.tracks.filter((tr) => now - tr.lastT < 2800);
+    this.tracks = this.tracks.filter((tr) => now - tr.lastT < TRACK_TTL_MS);
 
     const cues: BehaviorCue[] = [];
-    const persons = this.tracks.filter((t) => t.label === "person");
-    const animals = this.tracks.filter((t) => t.label === "animal");
+    const livePersons = this.tracks.filter((t) => t.label === "person" && now - t.lastT < 40);
+    const persons = livePersons;
+    const animals = this.tracks.filter((t) => t.label === "animal" && now - t.lastT < 40);
+    const crowdSize = separatedPeople(livePersons);
+    const nightScene = Boolean(scene?.night) || scene?.scenario === "night";
+    const allowGroup = scene?.scenario !== "night" && crowdSize >= GROUP_MIN;
     const anyoneInZone = fenceList.length
       ? this.tracks.some((t) => t.label === "person" && nearAnyFence(t.bbox, fenceList))
       : false;
 
-    if (persons.length >= GROUP_MIN) {
+    if (allowGroup) {
       if (this.groupSince == null) this.groupSince = now;
       this.groupMissSince = null;
     } else if (this.groupSince != null) {
@@ -369,14 +386,15 @@ export class CameraAnalyzer {
       }
     }
 
-    const night = Boolean(scene?.night);
+    const night = nightScene;
     let movingAnimal: Track | null = null;
     for (const track of animals) {
       const short = samplesSince(track.samples, now, 1800);
       if (isMoving(short)) movingAnimal = track;
     }
 
-    const groupReady = this.groupSince != null && now - this.groupSince >= GROUP_HOLD_MS;
+    const groupReady =
+      allowGroup && this.groupSince != null && now - this.groupSince >= GROUP_HOLD_MS;
     const animalTracks = animals.filter((t) => now - t.samples[0].t >= 700);
 
     const crossingTracks: Track[] = [];
@@ -455,7 +473,7 @@ export class CameraAnalyzer {
         cues,
         "group-movement",
         persons[0],
-        `${persons.length} people moving together in view.`,
+        `${crowdSize} people moving together in view.`,
       );
     }
 
@@ -504,16 +522,20 @@ export class CameraAnalyzer {
             ? "border-crossing"
             : animalTracks.length
               ? "animal"
-              : loiterTracks.length
-                ? "loitering"
-                : null;
+              : night && livePersons.length
+                ? "night"
+                : loiterTracks.length
+                  ? "loitering"
+                  : null;
 
-    const tracks: Detection[] = this.tracks.map((t) => ({
-      track_id: t.id,
-      label: t.label,
-      confidence: t.confidence,
-      bbox: t.bbox,
-    }));
+    const tracks: Detection[] = this.tracks
+      .filter((t) => now - t.lastT < DRAW_TTL_MS)
+      .map((t) => ({
+        track_id: t.id,
+        label: t.label,
+        confidence: t.confidence,
+        bbox: t.bbox,
+      }));
 
     return { tracks, cues, threat, inZone: anyoneInZone, night, activeKeys: [...desired] };
   }
@@ -543,7 +565,7 @@ export class CameraAnalyzer {
       for (const track of this.tracks) {
         if (track.label !== det.label) continue;
         const overlap = iou(track.bbox, det.bbox);
-        if (overlap > 0.18) pairs.push({ di, track, score: overlap });
+        if (overlap > 0.12) pairs.push({ di, track, score: overlap });
       }
     });
     pairs.sort((a, b) => b.score - a.score);
@@ -556,7 +578,7 @@ export class CameraAnalyzer {
     raw.forEach((det, di) => {
       if (usedDet.has(di)) return;
       let best: Track | null = null;
-      let bestDist = 0.09;
+      let bestDist = 0.14;
       for (const track of this.tracks) {
         if (usedTrack.has(track.id) || track.label !== det.label) continue;
         const c1 = center(track.bbox);
@@ -625,7 +647,7 @@ export function analyzeCamera(
   cameraId: string,
   detections: Detection[],
   now: number,
-  scene?: { night?: boolean; fence?: FenceLine | null; fences?: FenceLine[] },
+  scene?: { night?: boolean; scenario?: DemoScenario; fence?: FenceLine | null; fences?: FenceLine[] },
 ): AnalyzerFrame {
   let analyzer = analyzers.get(cameraId);
   if (!analyzer) {

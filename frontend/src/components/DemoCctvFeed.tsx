@@ -8,7 +8,7 @@ import {
   resetCameraAnalyzer,
   type BehaviorCue,
 } from "../lib/behaviorEngine";
-import { captureSnapshot, frameLuminance, isNightScene } from "../lib/evidenceCapture";
+import { captureSnapshot, frameLuminance } from "../lib/evidenceCapture";
 import {
   claimVision,
   detectFromVideo,
@@ -559,15 +559,17 @@ export default function DemoCctvFeed({
         ) {
           busy.current = true;
           lastDetectAt.current = now;
-          const crowd = scenarioRef.current === "group-movement";
+          const clipIsNight = scenarioRef.current === "night";
+          const crowd = scenarioRef.current === "group-movement" && !clipIsNight;
           detectFromVideo(video, {
             maxWidth: crowd ? 512 : 416,
-            maxBoxes: crowd ? 20 : 12,
+            maxBoxes: crowd ? 16 : clipIsNight ? 6 : 10,
+            personMin: clipIsNight ? 0.48 : crowd ? 0.34 : 0.4,
           })
             .then((raw) => {
               const clipIsNight = scenarioRef.current === "night";
               const lum = clipIsNight ? frameLuminance(video) : 1;
-              const night = clipIsNight && isNightScene(lum);
+              const night = clipIsNight;
               nightRef.current = night;
               const watchFence = monitorFenceRef.current || showZoneRef.current;
               const fenceLines = watchFence
@@ -575,6 +577,7 @@ export default function DemoCctvFeed({
                 : [];
               const frame = analyzeCamera(cameraId, raw, performance.now(), {
                 night,
+                scenario: scenarioRef.current,
                 fences: fenceLines,
               });
               visionDets.current = frame.tracks;

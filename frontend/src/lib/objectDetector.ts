@@ -153,11 +153,60 @@ function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
+function boxIou(
+  a: { x1: number; y1: number; x2: number; y2: number },
+  b: { x1: number; y1: number; x2: number; y2: number },
+) {
+  const x1 = Math.max(a.x1, b.x1);
+  const y1 = Math.max(a.y1, b.y1);
+  const x2 = Math.min(a.x2, b.x2);
+  const y2 = Math.min(a.y2, b.y2);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
+  const areaB = Math.max(0, b.x2 - b.x1) * Math.max(0, b.y2 - b.y1);
+  const union = areaA + areaB - inter;
+  return union <= 0 ? 0 : inter / union;
+}
+
+function containedMostly(
+  inner: { x1: number; y1: number; x2: number; y2: number },
+  outer: { x1: number; y1: number; x2: number; y2: number },
+) {
+  const x1 = Math.max(inner.x1, outer.x1);
+  const y1 = Math.max(inner.y1, outer.y1);
+  const x2 = Math.min(inner.x2, outer.x2);
+  const y2 = Math.min(inner.y2, outer.y2);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const innerArea = Math.max(0.0001, (inner.x2 - inner.x1) * (inner.y2 - inner.y1));
+  return inter / innerArea >= 0.65;
+}
+
+/** Drop duplicate / nested person boxes (common on IR and grainy night footage). */
+function suppressDuplicates(dets: Detection[]): Detection[] {
+  const ranked = [...dets].sort((a, b) => b.confidence - a.confidence);
+  const keep: Detection[] = [];
+  for (const det of ranked) {
+    const dup = keep.some((other) => {
+      if (other.label !== det.label) return false;
+      if (boxIou(other.bbox, det.bbox) >= 0.35) return true;
+      if (containedMostly(det.bbox, other.bbox) || containedMostly(other.bbox, det.bbox)) return true;
+      const c1x = (other.bbox.x1 + other.bbox.x2) / 2;
+      const c1y = (other.bbox.y1 + other.bbox.y2) / 2;
+      const c2x = (det.bbox.x1 + det.bbox.x2) / 2;
+      const c2y = (det.bbox.y1 + det.bbox.y2) / 2;
+      return Math.hypot(c1x - c2x, c1y - c2y) < 0.05;
+    });
+    if (!dup) keep.push(det);
+  }
+  return keep;
+}
+
 const detectScratch = typeof document !== "undefined" ? document.createElement("canvas") : null;
 
 export type DetectOpts = {
   maxWidth?: number;
   maxBoxes?: number;
+  personMin?: number;
 };
 
 export async function detectFromVideo(video: HTMLVideoElement, opts?: DetectOpts): Promise<Detection[]> {
@@ -165,8 +214,9 @@ export async function detectFromVideo(video: HTMLVideoElement, opts?: DetectOpts
   const model = await loadObjectDetector();
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  const maxW = opts?.maxWidth ?? 448;
-  const maxBoxes = opts?.maxBoxes ?? 16;
+  const maxW = opts?.maxWidth ?? 416;
+  const maxBoxes = opts?.maxBoxes ?? 10;
+  const personMin = opts?.personMin ?? 0.4;
   const dw = Math.min(maxW, vw);
   const dh = Math.max(1, Math.round((vh / Math.max(vw, 1)) * dw));
   let input: HTMLVideoElement | HTMLCanvasElement = video;
@@ -190,15 +240,15 @@ export async function detectFromVideo(video: HTMLVideoElement, opts?: DetectOpts
     const isPerson = pred.class === "person";
     const isAnimal = ANIMAL_LABELS.has(pred.class);
     if (!isPerson && !isAnimal) continue;
-    if (isPerson && pred.score < 0.28) continue;
-    if (isAnimal && pred.score < 0.32) continue;
+    if (isPerson && pred.score < personMin) continue;
+    if (isAnimal && pred.score < 0.38) continue;
 
     const [x, y, w, h] = pred.bbox;
     const x1 = clamp01(x / iw);
     const y1 = clamp01(y / ih);
     const x2 = clamp01((x + w) / iw);
     const y2 = clamp01((y + h) / ih);
-    if ((x2 - x1) * (y2 - y1) < 0.00035) continue;
+    if ((x2 - x1) * (y2 - y1) < 0.0008) continue;
 
     out.push({
       label: isAnimal ? "animal" : "person",
@@ -207,5 +257,5 @@ export async function detectFromVideo(video: HTMLVideoElement, opts?: DetectOpts
     });
   }
 
-  return out;
+  return suppressDuplicates(out);
 }
