@@ -11,6 +11,9 @@ export const DEFAULT_FENCE: FenceLine = { ax: 0.5, ay: 0.04, bx: 0.5, by: 0.96 }
 /** Horizontal line for climb-over clips (person going over the wire). */
 export const CLIMB_FENCE: FenceLine = { ax: 0.06, ay: 0.5, bx: 0.94, by: 0.5 };
 
+/** Lower wire — many fence clips put the chain-link in the bottom half of the frame. */
+export const CLIMB_FENCE_LOW: FenceLine = { ax: 0.06, ay: 0.68, bx: 0.94, by: 0.68 };
+
 function clamp(n: number, lo = 0, hi = 1) {
   return Math.max(lo, Math.min(hi, n));
 }
@@ -20,8 +23,12 @@ export function resolveFence(fence: FenceLine | null | undefined): FenceLine {
 }
 
 export function fencesToMonitor(custom?: FenceLine | null): FenceLine[] {
-  if (custom) return [custom];
-  return [DEFAULT_FENCE, CLIMB_FENCE];
+  if (custom) {
+    return isMostlyVertical(custom)
+      ? [custom, CLIMB_FENCE, CLIMB_FENCE_LOW]
+      : [custom, DEFAULT_FENCE];
+  }
+  return [DEFAULT_FENCE, CLIMB_FENCE, CLIMB_FENCE_LOW];
 }
 
 export function isMostlyVertical(f: FenceLine) {
@@ -62,6 +69,29 @@ export function bboxStraddlesFence(
     if (s < 0) neg = true;
   }
   return pos && neg;
+}
+
+export function pointToSegmentDistance(px: number, py: number, f: FenceLine) {
+  const dx = f.bx - f.ax;
+  const dy = f.by - f.ay;
+  const len2 = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((px - f.ax) * dx + (py - f.ay) * dy) / len2));
+  return Math.hypot(px - (f.ax + t * dx), py - (f.ay + t * dy));
+}
+
+/** Person is on / overlapping the fence — including already mid-climb when first detected. */
+export function bboxNearFence(
+  bbox: { x1: number; y1: number; x2: number; y2: number },
+  f: FenceLine,
+  band = 0.12,
+) {
+  if (bboxStraddlesFence(bbox, f)) return true;
+  const cx = (bbox.x1 + bbox.x2) / 2;
+  const cy = (bbox.y1 + bbox.y2) / 2;
+  const pad = isMostlyVertical(f) ? band : Math.max(band, 0.16);
+  if (pointToSegmentDistance(cx, cy, f) <= pad) return true;
+  if (pointToSegmentDistance(cx, bbox.y2, f) <= pad) return true;
+  return false;
 }
 
 export function fenceFromDrag(x0: number, y0: number, x1: number, y1: number): FenceLine {

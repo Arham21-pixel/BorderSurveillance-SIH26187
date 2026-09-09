@@ -305,23 +305,25 @@ function drawVideoOverlay(
 
   if (opts.showZone && opts.analyzing) {
     const lines = opts.fences?.length ? opts.fences : opts.fence ? [opts.fence] : [DEFAULT_FENCE];
-    for (const fence of lines) {
+    lines.forEach((fence, i) => {
       const x1 = ox + fence.ax * dw;
       const y1 = oy + fence.ay * dh;
       const x2 = ox + fence.bx * dw;
       const y2 = oy + fence.by * dh;
-      ctx.strokeStyle = "rgba(255, 77, 103, 0.9)";
+      ctx.strokeStyle = i === 0 ? "rgba(255, 77, 103, 0.9)" : "rgba(255, 77, 103, 0.45)";
       ctx.setLineDash([6, 5]);
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = i === 0 ? 1.5 : 1;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
       ctx.setLineDash([]);
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2;
-      drawChip(ctx, midX + 6, midY - 8, "FENCE", "#FF4D67", fontPx);
-    }
+      if (i === 0) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        drawChip(ctx, midX + 6, midY - 8, "FENCE", "#FF4D67", fontPx);
+      }
+    });
   }
 
   if (opts.showBoxes && opts.analyzing) {
@@ -546,8 +548,10 @@ export default function DemoCctvFeed({
           analyzingRef.current &&
           !busy.current &&
           visionStateRef.current === "ready" &&
-          !video.paused &&
-          now - lastDetectAt.current > 800
+          video.readyState >= 2 &&
+          (!video.paused || !threatRef.current) &&
+          now - lastDetectAt.current >
+            (monitorFenceRef.current || showZoneRef.current ? 240 : 480)
         ) {
           busy.current = true;
           lastDetectAt.current = now;
@@ -593,7 +597,7 @@ export default function DemoCctvFeed({
             });
         }
 
-        if (now - lastEmit.current > 280) {
+        if (now - lastEmit.current > 80) {
           lastEmit.current = now;
           const cues = pendingCues.current;
           pendingCues.current = [];

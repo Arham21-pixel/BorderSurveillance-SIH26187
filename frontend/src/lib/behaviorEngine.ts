@@ -3,6 +3,7 @@ import type { Alert } from "../types/alert";
 import type { EventItem } from "../types/event";
 import { SCENARIO_META, type DemoScenario } from "./demoScenarios";
 import {
+  bboxNearFence,
   bboxStraddlesFence,
   isMostlyVertical,
   lineSide,
@@ -29,6 +30,7 @@ export function episodeKey(cameraId: string, kind: string, trackId?: number | st
             ? "night_activity"
             : kind;
   if (normalized === "group_movement") return `${cameraId}:group_movement`;
+  if (normalized === "restricted_zone_entry") return `${cameraId}:restricted_zone_entry`;
   return `${cameraId}:${normalized}:${trackId ?? "na"}`;
 }
 
@@ -116,6 +118,24 @@ function isMoving(window: Sample[]) {
   const net = Math.hypot(last.x - first.x, last.y - first.y);
   const grew = last.area > first.area * 1.22 || last.height > first.height * 1.12;
   return net > 0.035 || grew;
+}
+
+/** Image y grows downward — climbing moves the body / feet upward (smaller y). */
+function isClimbing(window: Sample[]) {
+  if (window.length < 2) return false;
+  const first = window[0];
+  const last = window[window.length - 1];
+  return first.y - last.y >= 0.03 || first.footY - last.footY >= 0.04;
+}
+
+function inPerimeterBand(bbox: Detection["bbox"]) {
+  const cy = (bbox.y1 + bbox.y2) / 2;
+  const h = bbox.y2 - bbox.y1;
+  return h >= 0.14 && cy >= 0.22 && cy <= 0.88;
+}
+
+function nearAnyFence(bbox: Detection["bbox"], fences: FenceLine[]) {
+  return fences.some((f) => bboxNearFence(bbox, f));
 }
 
 function crossedFence(window: Sample[], fence: FenceLine) {
@@ -285,11 +305,14 @@ function makeCue(
   return { id: kind, key, kind, ...payloads[kind] };
 }
 
+const BOUNDARY_HOLD_MS = 6000;
+
 export class CameraAnalyzer {
   private tracks: Track[] = [];
   private nextId = 1;
   private open = new Set<string>();
   private groupSince: number | null = null;
+  private lastBoundaryAt = 0;
   private cameraId: string;
   private fence: FenceLine = resolveFence(null);
 
@@ -302,6 +325,7 @@ export class CameraAnalyzer {
     this.nextId = 1;
     this.open.clear();
     this.groupSince = null;
+    this.lastBoundaryAt = 0;
   }
 
   pathFor(trackId: number): { x: number; y: number }[] {
@@ -327,7 +351,7 @@ export class CameraAnalyzer {
     const persons = this.tracks.filter((t) => t.label === "person");
     const animals = this.tracks.filter((t) => t.label === "animal");
     const anyoneInZone = fenceList.length
-      ? this.tracks.some((t) => t.label === "person" && fenceList.some((f) => bboxStraddlesFence(t.bbox, f)))
+      ? this.tracks.some((t) => t.label === "person" && nearAnyFence(t.bbox, fenceList))
       : false;
 
     if (persons.length >= GROUP_MIN) {
@@ -358,15 +382,20 @@ export class CameraAnalyzer {
 
       if (track.label === "person" && fenceList.length) {
         const pathCross = crossedAnyFence(window, fenceList);
-        if (pathCross) {
+        const onFence = nearAnyFence(track.bbox, fenceList);
+        const climbOver = isClimbing(window) && inPerimeterBand(track.bbox);
+        if (pathCross || onFence || climbOver) {
           track.enteredSide = side !== 0 ? side : track.enteredSide ?? 1;
           crossingTracks.push(track);
+          this.lastBoundaryAt = now;
         } else if (track.enteredSide != null) {
           const stillInside = fenceList.some(
             (f) => bboxStraddlesFence(track.bbox, f) || (side !== 0 && side === track.enteredSide),
           );
-          if (stillInside) crossingTracks.push(track);
-          else track.enteredSide = null;
+          if (stillInside) {
+            crossingTracks.push(track);
+            this.lastBoundaryAt = now;
+          } else track.enteredSide = null;
         }
       }
 
@@ -421,14 +450,20 @@ export class CameraAnalyzer {
       );
     }
 
-    for (const track of crossingTracks) {
-      desired.add(episodeKey(this.cameraId, "border-crossing", track.id));
-      this.pushCue(
-        cues,
-        "border-crossing",
-        track,
-        "Track crossed the monitored fence / restricted boundary.",
-      );
+    const boundaryHeld = this.lastBoundaryAt > 0 && now - this.lastBoundaryAt < BOUNDARY_HOLD_MS;
+    if (crossingTracks.length || boundaryHeld) {
+      desired.add(episodeKey(this.cameraId, "border-crossing"));
+      const track = crossingTracks[0] ?? persons[0];
+      if (track) {
+        this.pushCue(
+          cues,
+          "border-crossing",
+          track,
+          crossingTracks.length
+            ? "Person on / crossing the monitored fence."
+            : "Boundary episode held after fence contact.",
+        );
+      }
     }
 
     for (const track of loiterTracks) {
@@ -451,7 +486,7 @@ export class CameraAnalyzer {
       }
     }
 
-    const threat: DemoScenario | null = crossingTracks.length
+    const threat: DemoScenario | null = crossingTracks.length || boundaryHeld
       ? "border-crossing"
       : animalTracks.length
         ? "animal"
@@ -472,7 +507,11 @@ export class CameraAnalyzer {
   }
 
   private pushCue(cues: BehaviorCue[], kind: DemoScenario, track: Track, extra: string) {
-    const key = episodeKey(this.cameraId, kind, kind === "group-movement" ? null : track.id);
+    const key = episodeKey(
+      this.cameraId,
+      kind,
+      kind === "group-movement" || kind === "border-crossing" ? null : track.id,
+    );
     if (this.open.has(key)) return;
     this.open.add(key);
     const cue = makeCue(this.cameraId, kind, track.id, extra);
@@ -525,7 +564,7 @@ export class CameraAnalyzer {
 
   private touch(track: Track, det: Detection, now: number) {
     if (track.samples.length > 0) {
-      const a = 0.38;
+      const a = 0.7;
       track.bbox = {
         x1: track.bbox.x1 * (1 - a) + det.bbox.x1 * a,
         y1: track.bbox.y1 * (1 - a) + det.bbox.y1 * a,
@@ -538,15 +577,15 @@ export class CameraAnalyzer {
     track.confidence = det.confidence;
     track.label = det.label;
     track.lastT = now;
-    const c = center(track.bbox);
-    const area = Math.max(0.0001, (track.bbox.x2 - track.bbox.x1) * (track.bbox.y2 - track.bbox.y1));
+    const raw = center(det.bbox);
+    const area = Math.max(0.0001, (det.bbox.x2 - det.bbox.x1) * (det.bbox.y2 - det.bbox.y1));
     track.samples.push({
       t: now,
-      x: c.x,
-      y: c.y,
-      footY: track.bbox.y2,
+      x: raw.x,
+      y: raw.y,
+      footY: det.bbox.y2,
       area,
-      height: Math.max(0.0001, track.bbox.y2 - track.bbox.y1),
+      height: Math.max(0.0001, det.bbox.y2 - det.bbox.y1),
     });
     if (track.samples.length > 80) track.samples.splice(0, track.samples.length - 80);
   }
