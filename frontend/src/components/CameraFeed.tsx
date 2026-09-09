@@ -197,7 +197,7 @@ export default function CameraFeed({
   const feedLabel = (() => {
     if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
     if (activeCamera.videoUrl && liveThreat) {
-      const night = liveNight ? " · NIGHT" : "";
+      const night = liveThreat !== "animal" && liveNight ? " · NIGHT" : "";
       const short =
         liveThreat === "border-crossing"
           ? "BOUNDARY"

@@ -348,14 +348,14 @@ function drawVideoOverlay(
       const bh = Math.abs(y2 - y1) * dh;
       if (bw < 4 || bh < 4) continue;
       const animal = det.label === "animal";
-      const heat = opts.night;
+      const heat = Boolean(opts.night);
       ctx.strokeStyle = animal ? "#FFB020" : heat ? "#FF6B35" : "#26E5E5";
       ctx.lineWidth = stroke;
       ctx.strokeRect(x, y, bw, bh);
-      const kind = animal ? "animal" : heat ? "thermal" : det.label;
+      const kind = animal ? "animal" : "person";
       const tag = `#${det.track_id ?? "—"} ${kind}`;
       const tagY = y > oy + 14 ? y - 13 : y + 2;
-      drawChip(ctx, x, tagY, tag, animal ? "#FFB020" : "#26E5E5", fontPx);
+      drawChip(ctx, x, tagY, tag, animal ? "#FFB020" : heat ? "#FF6B35" : "#26E5E5", fontPx);
     }
   }
 
@@ -545,8 +545,9 @@ export default function DemoCctvFeed({
           lastDetectAt.current = now;
           detectFromVideo(video)
             .then((raw) => {
-              const lum = frameLuminance(video);
-              const night = isNightScene(lum);
+              const clipIsNight = scenarioRef.current === "night";
+              const lum = clipIsNight ? frameLuminance(video) : 1;
+              const night = clipIsNight && isNightScene(lum);
               nightRef.current = night;
               const activeFence = showZoneRef.current
                 ? resolveFence(previewFence.current ?? fenceRef.current)
