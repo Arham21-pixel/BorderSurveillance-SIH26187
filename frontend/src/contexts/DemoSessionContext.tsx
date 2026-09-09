@@ -139,7 +139,21 @@ function scenarioFromFilename(name: string): DemoScenario | null {
   const n = name.toLowerCase();
   if (n.includes("border") || n.includes("cross") || n.includes("fence")) return "border-crossing";
   if (n.includes("group")) return "group-movement";
-  if (n.includes("animal")) return "animal";
+  if (
+    n.includes("animal") ||
+    n.includes("wildlife") ||
+    n.includes("moose") ||
+    n.includes("deer") ||
+    n.includes("elk") ||
+    n.includes("bear") ||
+    n.includes("horse") ||
+    n.includes("cattle") ||
+    n.includes("cow") ||
+    n.includes("dog") ||
+    n.includes("bird")
+  ) {
+    return "animal";
+  }
   if (
     n.includes("night") ||
     n.includes("thermal") ||

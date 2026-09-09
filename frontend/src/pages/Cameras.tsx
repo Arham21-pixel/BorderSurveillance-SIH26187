@@ -140,7 +140,7 @@ export default function Cameras() {
             <div className="text-[13px] font-semibold text-netra-text mb-3">Camera fleet</div>
             <div className="space-y-2">
               {cameras.map((cam) => {
-                const scenario = (cam.scenario ?? "loitering") as DemoScenario;
+                const liveThreat = session.runtime[cam.id]?.threat;
                 const camAlerts = alerts.filter((a) => a.camera_id === cam.id && a.status === "open").length;
                 const selected = selectedCamera?.id === cam.id;
                 return (
@@ -158,8 +158,8 @@ export default function Cameras() {
                     </div>
                     <div className="text-[11px] text-netra-muted">
                       {cam.videoUrl
-                        ? session.runtime[cam.id]?.threat
-                          ? `Detected: ${SCENARIO_META[scenario].label}`
+                        ? liveThreat
+                          ? `Detected: ${SCENARIO_META[liveThreat].label}`
                           : "Auto-detecting threat type…"
                         : cam.sector}
                     </div>

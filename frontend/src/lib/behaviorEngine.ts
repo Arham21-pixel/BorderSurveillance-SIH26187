@@ -434,6 +434,7 @@ export class CameraAnalyzer {
       }
       if (
         track.label === "person" &&
+        animals.length === 0 &&
         track.stillSince != null &&
         now - track.stillSince >= LOITER_MS &&
         !crossingTracks.some((t) => t.id === track.id)
