@@ -16,10 +16,10 @@ export type CueKind = DemoScenario | "night";
 
 const LOITER_MS = 30_000;
 const GROUP_MIN = 3;
-const GROUP_HOLD_MS = 1200;
+const GROUP_HOLD_MS = 600;
 const GROUP_MISS_MS = 600;
-const TRACK_TTL_MS = 750;
-const DRAW_TTL_MS = 420;
+const TRACK_TTL_MS = 2400;
+const DRAW_TTL_MS = 2200;
 
 export function episodeKey(cameraId: string, kind: string, trackId?: number | string | null) {
   const normalized =
@@ -370,7 +370,8 @@ export class CameraAnalyzer {
     const animals = this.tracks.filter((t) => t.label === "animal" && now - t.lastT < 40);
     const crowdSize = separatedPeople(livePersons);
     const nightScene = Boolean(scene?.night) || scene?.scenario === "night";
-    const allowGroup = scene?.scenario !== "night" && crowdSize >= GROUP_MIN;
+    const groupNeed = scene?.scenario === "group-movement" ? 2 : GROUP_MIN;
+    const allowGroup = scene?.scenario !== "night" && crowdSize >= groupNeed;
     const anyoneInZone = fenceList.length
       ? this.tracks.some((t) => t.label === "person" && nearAnyFence(t.bbox, fenceList))
       : false;

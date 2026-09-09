@@ -322,9 +322,9 @@ class InMemoryRepository(BaseRepository):
             },
             "00000000-0000-4000-8000-000000000003": {
                 "id": "00000000-0000-4000-8000-000000000003",
-                "name": "Approach Cam 03",
+                "name": "Group of People Cam",
                 "camera_code": "CAM-03",
-                "location": "Approach Path",
+                "location": "Group movement",
                 "latitude": 27.8058,
                 "longitude": 70.1794,
                 "stream_ref": "CAM-03",

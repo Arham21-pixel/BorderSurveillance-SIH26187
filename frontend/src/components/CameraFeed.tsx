@@ -366,7 +366,7 @@ export default function CameraFeed({
                     ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title="Show or hide the virtual fence. Drag on the video to place it."
+                title="Turn on, then click the black wire / border in the video to place the fence"
               >
                 <Layers className="w-3 h-3" />
                 <span className="hidden sm:inline">Virtual Fence</span>

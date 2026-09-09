@@ -17,7 +17,7 @@ import {
   loadObjectDetector,
   releaseVision,
 } from "../lib/objectDetector";
-import { DEFAULT_FENCE, fenceFromDrag, fencesToMonitor, type FenceLine } from "../lib/fence";
+import { DEFAULT_FENCE, detectDarkFloorLine, fenceFromDrag, fencesToMonitor, type FenceLine } from "../lib/fence";
 
 interface DemoCctvFeedProps {
   scenario: DemoScenario;
@@ -352,7 +352,7 @@ function drawVideoOverlay(
       const y = oy + Math.min(y1, y2) * dh;
       const bw = Math.abs(x2 - x1) * dw;
       const bh = Math.abs(y2 - y1) * dh;
-      if (bw < 4 || bh < 4) continue;
+      if (bw < 2 || bh < 2) continue;
       const animal = det.label === "animal";
       const heat = Boolean(opts.night);
       ctx.strokeStyle = animal ? "#FFB020" : heat ? "#FF6B35" : "#26E5E5";
@@ -374,6 +374,9 @@ function drawVideoOverlay(
         : SCENARIO_META[opts.threat].label.toUpperCase();
     const color = opts.threat === "border-crossing" ? "#FF4D67" : animal ? "#FFB020" : "#26E5E5";
     drawChip(ctx, ox + 6, oy + 6, label, color, fontPx);
+  }
+  if (opts.showZone && !(opts.fences && opts.fences.length)) {
+    drawChip(ctx, ox + 6, oy + dh - 28, "CLICK THE WIRE TO SET FENCE", "#FF4D67", fontPx);
   }
   if (opts.night) {
     drawChip(ctx, ox + 6, oy + dh - 16, "NIGHT ASSIST", "#FF922E", fontPx);
@@ -488,6 +491,38 @@ export default function DemoCctvFeed({
   }, [cameraId, videoUrl, compact]);
 
   useEffect(() => {
+    if (compact || !videoUrl || !monitorFence) return;
+    const video = videoRef.current;
+    if (!video) return;
+    let tries = 0;
+    let timer = 0;
+    const snap = () => {
+      if (fenceRef.current || previewFence.current) return;
+      const line = detectDarkFloorLine(video);
+      if (!line) return;
+      previewFence.current = line;
+      fenceRef.current = line;
+      onPlaceFenceRef.current?.(line);
+    };
+    const start = () => {
+      snap();
+      timer = window.setInterval(() => {
+        tries += 1;
+        snap();
+        if (fenceRef.current || previewFence.current || tries > 10) {
+          window.clearInterval(timer);
+        }
+      }, 600);
+    };
+    if (video.readyState >= 2) start();
+    else video.addEventListener("loadeddata", start, { once: true });
+    return () => {
+      window.clearInterval(timer);
+      video.removeEventListener("loadeddata", start);
+    };
+  }, [cameraId, videoUrl, compact, monitorFence]);
+
+  useEffect(() => {
     if (compact && videoUrl) return undefined;
     let raf = 0;
     const LOOP_MS = 16000;
@@ -527,9 +562,8 @@ export default function DemoCctvFeed({
             thermalTick.current += 1;
             const dets = claimed ? visionDets.current : detectionsRef.current ?? [];
             const watchFence = monitorFenceRef.current || showZoneRef.current;
-            const fenceLines = watchFence
-              ? fencesToMonitor(previewFence.current ?? fenceRef.current)
-              : [];
+            const placed = previewFence.current ?? fenceRef.current;
+            const fenceLines = watchFence ? fencesToMonitor(placed, video) : [];
             drawVideoOverlay(ctx, cssW, cssH, video, dets, {
               showBoxes: showBoxesRef.current,
               showZone: showZoneRef.current,
@@ -550,21 +584,16 @@ export default function DemoCctvFeed({
           visionStateRef.current === "ready" &&
           video.readyState >= 2 &&
           (!video.paused || !threatRef.current) &&
-          now - lastDetectAt.current >
-            (monitorFenceRef.current ||
-            showZoneRef.current ||
-            scenarioRef.current === "group-movement"
-              ? 240
-              : 420)
+          now - lastDetectAt.current > 180
         ) {
           busy.current = true;
           lastDetectAt.current = now;
           const clipIsNight = scenarioRef.current === "night";
           const crowd = scenarioRef.current === "group-movement" && !clipIsNight;
           detectFromVideo(video, {
-            maxWidth: crowd ? 512 : 416,
-            maxBoxes: crowd ? 16 : clipIsNight ? 6 : 10,
-            personMin: clipIsNight ? 0.48 : crowd ? 0.34 : 0.4,
+            maxWidth: crowd ? 416 : 320,
+            maxBoxes: crowd ? 16 : 8,
+            personMin: clipIsNight ? 0.45 : crowd ? 0.3 : 0.32,
           })
             .then((raw) => {
               const clipIsNight = scenarioRef.current === "night";
@@ -573,14 +602,20 @@ export default function DemoCctvFeed({
               nightRef.current = night;
               const watchFence = monitorFenceRef.current || showZoneRef.current;
               const fenceLines = watchFence
-                ? fencesToMonitor(previewFence.current ?? fenceRef.current)
+                ? fencesToMonitor(previewFence.current ?? fenceRef.current, video)
                 : [];
               const frame = analyzeCamera(cameraId, raw, performance.now(), {
                 night,
                 scenario: scenarioRef.current,
                 fences: fenceLines,
               });
-              visionDets.current = frame.tracks;
+              if (frame.tracks.length) visionDets.current = frame.tracks;
+              else if (raw.length) {
+                visionDets.current = raw.map((det, i) => ({
+                  ...det,
+                  track_id: det.track_id ?? i + 1,
+                }));
+              }
               threatRef.current = frame.threat;
               lastActiveKeys.current = frame.activeKeys;
               if (frame.cues.length) {
@@ -701,7 +736,7 @@ export default function DemoCctvFeed({
           />
           <canvas
             ref={overlayRef}
-            className={`absolute inset-0 w-full h-full ${showZone ? "pointer-events-auto cursor-crosshair" : "pointer-events-none"}`}
+            className={`absolute inset-0 z-[5] w-full h-full ${showZone ? "pointer-events-auto cursor-crosshair" : "pointer-events-none"}`}
             onPointerDown={(e) => {
               if (!showZone) return;
               const p = normFromPointer(e);
