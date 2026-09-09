@@ -179,14 +179,14 @@ export default function Events() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#e8eef5]">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F4F8FA]">
               Video Events & Risk Log
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#16202b] text-[#3dd6c6] border border-[#243140] uppercase">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#101A24] text-[#26E5E5] border border-[#1A343C] uppercase">
               NETRA • SIH Prototype
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#8fa3b8] mt-1">
+          <p className="text-xs sm:text-sm text-[#8B9AA6] mt-1">
             Sequential log of detections, behaviour events, and contextual risk scores.
           </p>
         </div>
@@ -195,19 +195,19 @@ export default function Events() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="px-3 py-1.5 rounded-lg bg-[#101820] hover:bg-[#16202b] text-[#e8eef5] border border-[#243140] text-xs font-mono flex items-center gap-1.5 transition-colors shadow-sm"
+            className="n-btn-secondary !py-1.5 font-mono"
             title="Download CSV Event Log"
           >
-            <Download className="w-3.5 h-3.5 text-[#3dd6c6]" />
+            <Download className="w-3.5 h-3.5 text-[#26E5E5]" />
             <span>Export CSV</span>
           </button>
 
           <button
             onClick={handlePrintReport}
-            className="px-3 py-1.5 rounded-lg bg-[#16202b] hover:bg-[#243140] text-[#e8eef5] border border-[#243140] text-xs font-mono flex items-center gap-1.5 transition-colors shadow-sm"
+            className="n-btn-secondary !py-1.5 font-mono"
             title="Print or Export PDF Report"
           >
-            <Printer className="w-3.5 h-3.5 text-[#f5b942]" />
+            <Printer className="w-3.5 h-3.5 text-[#F2C94C]" />
             <span>Print Report (PDF)</span>
           </button>
         </div>
@@ -215,67 +215,67 @@ export default function Events() {
 
       {/* KPI Highlight Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 font-mono text-xs">
-        <div className="p-3.5 rounded-xl bg-[#101820] border border-[#243140] flex items-center justify-between">
+        <div className="n-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#8fa3b8] uppercase">Total Events Logged</div>
-            <div className="text-xl font-bold text-[#e8eef5] mt-1">{events.length}</div>
+            <div className="text-[10px] text-[#8B9AA6] uppercase">Total Events Logged</div>
+            <div className="text-xl font-bold text-[#F4F8FA] mt-1">{events.length}</div>
           </div>
-          <div className="p-2.5 rounded-lg bg-[#0c141c] text-[#3dd6c6] border border-[#243140]">
+          <div className="p-2.5 rounded-lg bg-[#101A24] text-[#26E5E5] border border-[#1A343C]">
             <Activity className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[#101820] border border-[#243140] flex items-center justify-between">
+        <div className="n-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#8fa3b8] uppercase">Zone Intrusions</div>
-            <div className="text-xl font-bold text-[#ff5a5a] mt-1">
+            <div className="text-[10px] text-[#8B9AA6] uppercase">Zone Intrusions</div>
+            <div className="text-xl font-bold text-[#FF4D67] mt-1">
               {events.filter((e) => e.kind === "zone_intrusion").length}
             </div>
           </div>
-          <div className="p-2.5 rounded-lg bg-[#0c141c] text-[#ff5a5a] border border-[#243140]">
+          <div className="p-2.5 rounded-lg bg-[#101A24] text-[#FF4D67] border border-[#1A343C]">
             <ShieldAlert className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[#101820] border border-[#243140] flex items-center justify-between">
+        <div className="n-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#8fa3b8] uppercase">High / Critical Risk</div>
-            <div className="text-xl font-bold text-[#f5b942] mt-1">
+            <div className="text-[10px] text-[#8B9AA6] uppercase">High / Critical Risk</div>
+            <div className="text-xl font-bold text-[#F2C94C] mt-1">
               {events.filter((e) => e.risk_score >= 0.75).length}
             </div>
           </div>
-          <div className="p-2.5 rounded-lg bg-[#0c141c] text-[#f5b942] border border-[#243140]">
+          <div className="p-2.5 rounded-lg bg-[#101A24] text-[#F2C94C] border border-[#1A343C]">
             <Layers className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-[#101820] border border-[#243140] flex items-center justify-between">
+        <div className="n-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#8fa3b8] uppercase">Avg Incident Score</div>
-            <div className="text-xl font-bold text-[#5ad67a] mt-1">
+            <div className="text-[10px] text-[#8B9AA6] uppercase">Avg Incident Score</div>
+            <div className="text-xl font-bold text-[#35D07F] mt-1">
               {events.length > 0
                 ? (events.reduce((acc, curr) => acc + curr.risk_score, 0) / events.length).toFixed(2)
                 : "0.00"}
             </div>
           </div>
-          <div className="p-2.5 rounded-lg bg-[#0c141c] text-[#5ad67a] border border-[#243140]">
+          <div className="p-2.5 rounded-lg bg-[#101A24] text-[#35D07F] border border-[#1A343C]">
             <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar Card */}
-      <div className="bg-[#101820] border border-[#243140] rounded-xl p-4 space-y-3">
+      <div className="n-card p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           {/* Keyword Search */}
           <div className="md:col-span-4 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8fa3b8]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B9AA6]" />
             <input
               type="text"
               placeholder="Search by keyword, camera, track ID, zone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] placeholder-[#8fa3b8] focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#101A24] border border-[#1A343C] text-xs text-[#F4F8FA] placeholder-[#8B9AA6] focus:outline-none focus:border-[#26E5E5] font-mono"
             />
           </div>
 
@@ -284,7 +284,7 @@ export default function Events() {
             <select
               value={kindFilter}
               onChange={(e) => setKindFilter(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#101A24] border border-[#1A343C] text-xs text-[#F4F8FA] focus:outline-none focus:border-[#26E5E5] font-mono"
             >
               <option value="ALL">All Event Kinds</option>
               <option value="zone_intrusion">Zone Intrusion</option>
@@ -301,7 +301,7 @@ export default function Events() {
             <select
               value={cameraFilter}
               onChange={(e) => setCameraFilter(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#101A24] border border-[#1A343C] text-xs text-[#F4F8FA] focus:outline-none focus:border-[#26E5E5] font-mono"
             >
               <option value="ALL">All Cameras</option>
               {uniqueCameras.map((cam) => (
@@ -317,7 +317,7 @@ export default function Events() {
             <select
               value={minRiskThreshold.toString()}
               onChange={(e) => setMinRiskThreshold(parseFloat(e.target.value))}
-              className="w-full px-2.5 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#101A24] border border-[#1A343C] text-xs text-[#F4F8FA] focus:outline-none focus:border-[#26E5E5] font-mono"
             >
               <option value="0">All Risk Scores</option>
               <option value="0.45">Risk ≥ 0.45 (Suspicious+)</option>
@@ -331,7 +331,7 @@ export default function Events() {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
-              className="w-full px-2.5 py-2 rounded-lg bg-[#0c141c] border border-[#243140] text-xs text-[#e8eef5] focus:outline-none focus:border-[#3dd6c6] font-mono"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#101A24] border border-[#1A343C] text-xs text-[#F4F8FA] focus:outline-none focus:border-[#26E5E5] font-mono"
             >
               <option value="ALL">All Dates</option>
               <option value="TODAY">Today Only</option>
@@ -342,9 +342,9 @@ export default function Events() {
         </div>
 
         {/* Active Filter Pills Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#243140]/60 text-xs font-mono">
-          <div className="flex items-center gap-2 text-[#8fa3b8]">
-            <Filter className="w-3.5 h-3.5 text-[#3dd6c6]" />
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1A343C]/60 text-xs font-mono">
+          <div className="flex items-center gap-2 text-[#8B9AA6]">
+            <Filter className="w-3.5 h-3.5 text-[#26E5E5]" />
             <span>
               Showing <strong>{processedEvents.length}</strong> matching event entries
             </span>
@@ -357,7 +357,7 @@ export default function Events() {
                   setMinRiskThreshold(0);
                   setDateRange("ALL");
                 }}
-                className="text-[11px] text-[#ff5a5a] hover:underline ml-2"
+                className="text-[11px] text-[#FF4D67] hover:underline ml-2"
               >
                 Clear all filters
               </button>
@@ -365,11 +365,11 @@ export default function Events() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[#8fa3b8] text-[11px]">Sort By:</span>
+            <span className="text-[#8B9AA6] text-[11px]">Sort By:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-[#0c141c] border border-[#243140] rounded px-2 py-1 text-[11px] text-[#e8eef5] focus:outline-none"
+              className="bg-[#101A24] border border-[#1A343C] rounded px-2 py-1 text-[11px] text-[#F4F8FA] focus:outline-none"
             >
               <option value="newest">Timestamp (Newest First)</option>
               <option value="oldest">Timestamp (Oldest First)</option>
@@ -381,10 +381,10 @@ export default function Events() {
       </div>
 
       {/* Audit Table */}
-      <div className="bg-[#101820] border border-[#243140] rounded-xl overflow-hidden shadow-xl">
+      <div className="n-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-[#0c141c] text-[#8fa3b8] uppercase text-[10px] tracking-wider border-b border-[#243140]">
+            <thead className="bg-[#101A24] text-[#8B9AA6] uppercase text-[10px] tracking-wider border-b border-[#1A343C]">
               <tr>
                 <th className="py-3 px-4">Event Ref / Kind</th>
                 <th className="py-3 px-4">Camera & Sector</th>
@@ -395,16 +395,16 @@ export default function Events() {
                 <th className="py-3 px-4 text-right">Quick Jump</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#243140]/60">
+            <tbody className="divide-y divide-[#1A343C]/60">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#8fa3b8]">
+                  <td colSpan={7} className="py-12 text-center text-[#8B9AA6]">
                     Loading event logs...
                   </td>
                 </tr>
               ) : paginatedEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#8fa3b8]">
+                  <td colSpan={7} className="py-12 text-center text-[#8B9AA6]">
                     No events found matching your search and filter criteria.
                   </td>
                 </tr>
@@ -415,34 +415,34 @@ export default function Events() {
                     <tr
                       key={event.id}
                       onClick={() => setSelectedEvent(event)}
-                      className={`hover:bg-[#16202b]/60 transition-colors cursor-pointer ${
-                        selectedEvent?.id === event.id ? "bg-[#16202b] border-l-2 border-[#3dd6c6]" : ""
+                      className={`hover:bg-[#101A24]/60 transition-colors cursor-pointer ${
+                        selectedEvent?.id === event.id ? "bg-[#101A24] border-l-2 border-[#26E5E5]" : ""
                       }`}
                     >
                       {/* Event Ref & Kind */}
                       <td className="py-3 px-4">
-                        <div className="font-bold text-[#e8eef5] flex items-center gap-1.5">
+                        <div className="font-bold text-[#F4F8FA] flex items-center gap-1.5">
                           <span>{event.id}</span>
                         </div>
-                        <div className="text-[10px] text-[#3dd6c6] uppercase tracking-wider font-semibold mt-0.5">
+                        <div className="text-[10px] text-[#26E5E5] uppercase tracking-wider font-semibold mt-0.5">
                           {event.kind.replace(/_/g, " ")}
                         </div>
                       </td>
 
                       {/* Camera & Sector */}
                       <td className="py-3 px-4">
-                        <div className="font-bold text-[#e8eef5] flex items-center gap-1">
-                          <Camera className="w-3 h-3 text-[#8fa3b8]" />
+                        <div className="font-bold text-[#F4F8FA] flex items-center gap-1">
+                          <Camera className="w-3 h-3 text-[#8B9AA6]" />
                           <span>{event.camera_id}</span>
                         </div>
-                        <div className="text-[10px] text-[#8fa3b8] mt-0.5 truncate max-w-[150px]">
+                        <div className="text-[10px] text-[#8B9AA6] mt-0.5 truncate max-w-[150px]">
                           {event.zone || "Border Sector"}
                         </div>
                       </td>
 
                       {/* Track ID */}
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded bg-[#0c141c] border border-[#243140] text-[#e8eef5] text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-[#101A24] border border-[#1A343C] text-[#F4F8FA] text-[11px]">
                           {event.track_id !== undefined && event.track_id !== null
                             ? `TRK #${event.track_id}`
                             : "UNTRACKED"}
@@ -453,7 +453,7 @@ export default function Events() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <RiskBadge severity={severity} size="sm" />
-                          <span className="text-xs font-bold text-[#e8eef5]">
+                          <span className="text-xs font-bold text-[#F4F8FA]">
                             {event.risk_score.toFixed(2)}
                           </span>
                         </div>
@@ -461,13 +461,13 @@ export default function Events() {
 
                       {/* Description */}
                       <td className="py-3 px-4 max-w-xs">
-                        <p className="text-xs text-[#e8eef5] line-clamp-1">
+                        <p className="text-xs text-[#F4F8FA] line-clamp-1">
                           {event.description}
                         </p>
                       </td>
 
                       {/* Timestamp */}
-                      <td className="py-3 px-4 text-[#8fa3b8] whitespace-nowrap text-[11px]">
+                      <td className="py-3 px-4 text-[#8B9AA6] whitespace-nowrap text-[11px]">
                         {formatTime(event.timestamp)}
                       </td>
 
@@ -478,7 +478,7 @@ export default function Events() {
                           <button
                             onClick={() => navigate("/cameras")}
                             title={`Jump to Live Feed (${event.camera_id})`}
-                            className="p-1.5 rounded-lg bg-[#0c141c] hover:bg-[#16202b] text-[#8fa3b8] hover:text-[#3dd6c6] border border-[#243140] transition-colors"
+                            className="p-1.5 rounded-lg bg-[#101A24] hover:bg-[#101A24] text-[#8B9AA6] hover:text-[#26E5E5] border border-[#1A343C] transition-colors"
                           >
                             <Camera className="w-3.5 h-3.5" />
                           </button>
@@ -487,7 +487,7 @@ export default function Events() {
                           <button
                             onClick={() => navigate("/evidence")}
                             title="Jump to Evidence Record"
-                            className="p-1.5 rounded-lg bg-[#0c141c] hover:bg-[#16202b] text-[#8fa3b8] hover:text-[#5ad67a] border border-[#243140] transition-colors"
+                            className="p-1.5 rounded-lg bg-[#101A24] hover:bg-[#101A24] text-[#8B9AA6] hover:text-[#35D07F] border border-[#1A343C] transition-colors"
                           >
                             <FileSearch className="w-3.5 h-3.5" />
                           </button>
@@ -502,8 +502,8 @@ export default function Events() {
         </div>
 
         {/* Pagination Controls */}
-        <div className="p-4 border-t border-[#243140] bg-[#0c141c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-          <div className="text-[#8fa3b8]">
+        <div className="p-4 border-t border-[#1A343C] bg-[#101A24] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+          <div className="text-[#8B9AA6]">
             Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to{" "}
             <strong>{Math.min(currentPage * itemsPerPage, processedEvents.length)}</strong> of{" "}
             <strong>{processedEvents.length}</strong> events
@@ -513,20 +513,20 @@ export default function Events() {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-2.5 py-1.5 rounded bg-[#16202b] border border-[#243140] text-[#e8eef5] hover:bg-[#243140] disabled:opacity-40 disabled:hover:bg-[#16202b] transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded bg-[#101A24] border border-[#1A343C] text-[#F4F8FA] hover:bg-[#1A343C] disabled:opacity-40 disabled:hover:bg-[#101A24] transition-colors flex items-center gap-1"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Previous</span>
             </button>
 
-            <span className="px-3 py-1 text-[#8fa3b8]">
+            <span className="px-3 py-1 text-[#8B9AA6]">
               Page {currentPage} of {totalPages}
             </span>
 
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-2.5 py-1.5 rounded bg-[#16202b] border border-[#243140] text-[#e8eef5] hover:bg-[#243140] disabled:opacity-40 disabled:hover:bg-[#16202b] transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded bg-[#101A24] border border-[#1A343C] text-[#F4F8FA] hover:bg-[#1A343C] disabled:opacity-40 disabled:hover:bg-[#101A24] transition-colors flex items-center gap-1"
             >
               <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -537,70 +537,70 @@ export default function Events() {
 
       {/* Selected Event Detail Drawer */}
       {selectedEvent && (
-        <div className="p-5 rounded-xl bg-[#101820] border border-[#243140] space-y-3 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between pb-2 border-b border-[#243140]">
+        <div className="n-card p-5 space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-[#1A343C]">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#3dd6c6]" />
-              <h3 className="text-xs font-mono font-bold uppercase text-[#e8eef5]">
+              <Sparkles className="w-4 h-4 text-[#26E5E5]" />
+              <h3 className="text-xs font-mono font-bold uppercase text-[#F4F8FA]">
                 Event Detail: {selectedEvent.id}
               </h3>
             </div>
             <button
               onClick={() => setSelectedEvent(null)}
-              className="text-xs font-mono text-[#8fa3b8] hover:text-[#e8eef5]"
+              className="text-xs font-mono text-[#8B9AA6] hover:text-[#F4F8FA]"
             >
               ✕ Close Detail
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono text-xs">
-            <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-              <div className="text-[10px] text-[#8fa3b8]">CLASSIFIED KIND</div>
-              <div className="font-bold text-[#e8eef5] mt-0.5 uppercase">
+            <div className="n-card-2 p-2.5">
+              <div className="text-[10px] text-[#8B9AA6]">CLASSIFIED KIND</div>
+              <div className="font-bold text-[#F4F8FA] mt-0.5 uppercase">
                 {selectedEvent.kind.replace(/_/g, " ")}
               </div>
             </div>
 
-            <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-              <div className="text-[10px] text-[#8fa3b8]">CAMERA FEED</div>
-              <div className="font-bold text-[#3dd6c6] mt-0.5">{selectedEvent.camera_id}</div>
+            <div className="n-card-2 p-2.5">
+              <div className="text-[10px] text-[#8B9AA6]">CAMERA FEED</div>
+              <div className="font-bold text-[#26E5E5] mt-0.5">{selectedEvent.camera_id}</div>
             </div>
 
-            <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-              <div className="text-[10px] text-[#8fa3b8]">RISK CONTEXT</div>
-              <div className="font-bold text-[#ff5a5a] mt-0.5">
+            <div className="n-card-2 p-2.5">
+              <div className="text-[10px] text-[#8B9AA6]">RISK CONTEXT</div>
+              <div className="font-bold text-[#FF4D67] mt-0.5">
                 {selectedEvent.risk_score.toFixed(2)} (
                 {severityFromScore(selectedEvent.risk_score)})
               </div>
             </div>
 
-            <div className="p-2.5 rounded bg-[#0c141c] border border-[#243140]">
-              <div className="text-[10px] text-[#8fa3b8]">GEO ZONE</div>
-              <div className="font-bold text-[#e8eef5] mt-0.5">
+            <div className="n-card-2 p-2.5">
+              <div className="text-[10px] text-[#8B9AA6]">GEO ZONE</div>
+              <div className="font-bold text-[#F4F8FA] mt-0.5">
                 {selectedEvent.zone || "Sector Perimeter"}
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded bg-[#0c141c] border border-[#243140] text-xs font-mono text-[#8fa3b8]">
-            <span className="font-bold text-[#e8eef5]">Event Narrative: </span>
+          <div className="p-3 rounded bg-[#101A24] border border-[#1A343C] text-xs font-mono text-[#8B9AA6]">
+            <span className="font-bold text-[#F4F8FA]">Event Narrative: </span>
             {selectedEvent.description}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               onClick={() => navigate("/cameras")}
-              className="px-3 py-1.5 rounded bg-[#16202b] hover:bg-[#243140] text-[#e8eef5] border border-[#243140] text-xs font-mono flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded bg-[#101A24] hover:bg-[#1A343C] text-[#F4F8FA] border border-[#1A343C] text-xs font-mono flex items-center gap-1.5 transition-colors"
             >
-              <Camera className="w-3.5 h-3.5 text-[#3dd6c6]" />
+              <Camera className="w-3.5 h-3.5 text-[#26E5E5]" />
               <span>Open Camera ({selectedEvent.camera_id})</span>
             </button>
 
             <button
               onClick={() => navigate("/evidence")}
-              className="px-3 py-1.5 rounded bg-[#16202b] hover:bg-[#243140] text-[#e8eef5] border border-[#243140] text-xs font-mono flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded bg-[#101A24] hover:bg-[#1A343C] text-[#F4F8FA] border border-[#1A343C] text-xs font-mono flex items-center gap-1.5 transition-colors"
             >
-              <FileSearch className="w-3.5 h-3.5 text-[#5ad67a]" />
+              <FileSearch className="w-3.5 h-3.5 text-[#35D07F]" />
               <span>Examine Evidence Snapshot</span>
             </button>
           </div>

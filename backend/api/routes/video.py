@@ -48,7 +48,13 @@ _sessions: Dict[str, Dict[str, Any]] = {}
 # Allowed demo video filenames (exactly as the frontend sends them)
 # ---------------------------------------------------------------------------
 DEMO_MP4_FILES: frozenset[str] = frozenset(
-    {"walking.mp4", "loitering.mp4", "border crossing.mp4"}
+    {
+        "walking.mp4",
+        "loitering.mp4",
+        "border crossing.mp4",
+        "group movement.mp4",
+        "animal demo.mp4",
+    }
 )
 
 

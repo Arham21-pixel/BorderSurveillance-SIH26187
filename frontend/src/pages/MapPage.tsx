@@ -2,6 +2,9 @@ import { useCameras } from "../hooks/useCameras";
 import { useAlerts } from "../hooks/useAlerts";
 import CameraMap from "../components/CameraMap";
 import { MapPin, Radio } from "lucide-react";
+import PageHeader from "../components/ui/PageHeader";
+import LiveBadge from "../components/ui/LiveBadge";
+import { SECTOR_COORDS_LABEL, SECTOR_NAME, SECTOR_REGION } from "../lib/constants";
 
 export default function MapPage() {
   const cameras = useCameras();
@@ -10,74 +13,79 @@ export default function MapPage() {
   const openAlerts = alerts.filter((a) => a.status === "open");
 
   return (
-    <div className="space-y-6 sm:space-y-7">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-white/[0.06]">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-            Surveillance Sector Map
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Camera and zone overview for simulated monitoring with alert context.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 text-xs">
-          <div className="px-3.5 py-1.5 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-[#39D98A]" />
-            <span className="text-slate-200 font-semibold font-mono">{cameras.filter((c) => c.status === "online").length}</span>
-            <span className="text-slate-400">Online</span>
+    <div className="space-y-6">
+      <PageHeader
+        title="Surveillance Sector Map"
+        subtitle={`Prototype sector on the ${SECTOR_REGION}–Pakistan IB belt (${SECTOR_NAME}), with fence, restricted strip, patrol path and camera cones.`}
+        badge={
+          <>
+            <LiveBadge label="SECTOR OVERVIEW" tone="live" />
+            <span className="text-[11px] font-mono text-netra-muted">
+              {SECTOR_REGION} · {SECTOR_COORDS_LABEL}
+            </span>
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-2 text-xs">
+            <div className="px-3 py-1.5 rounded-xl n-card-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-netra-normal" />
+              <span className="text-netra-text font-semibold font-mono">
+                {cameras.filter((c) => c.status === "online").length}
+              </span>
+              <span className="text-netra-muted">Online</span>
+            </div>
+            <div className="px-3 py-1.5 rounded-xl n-card-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-netra-critical" />
+              <span className="text-netra-critical font-semibold font-mono">{openAlerts.length}</span>
+              <span className="text-netra-muted">Alerts</span>
+            </div>
           </div>
-          <div className="px-3.5 py-1.5 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-rose-400 font-semibold font-mono">{openAlerts.length}</span>
-            <span className="text-slate-400">Alerts</span>
+        }
+      />
+
+      <div className="n-card p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-netra-accent/12 mb-4">
+          <span className="text-[13px] font-semibold text-netra-text flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-netra-accent" />
+            Operational sector map
+          </span>
+          <div className="flex flex-wrap items-center gap-3 text-[10px] font-medium">
+            <LegendDot color="bg-netra-accent" label="Fence" />
+            <LegendDot color="bg-netra-critical" label="Restricted" />
+            <LegendDot color="bg-netra-suspicious" label="Patrol" />
+            <LegendDot color="bg-netra-normal" label="Camera" />
+            <LegendDot color="bg-netra-high" label={`Alerts ${openAlerts.length}`} />
           </div>
         </div>
-      </div>
 
-      {/* Map Card */}
-      <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 shadow-xl">
-        <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06] mb-4">
-          <span className="text-xs font-semibold text-white flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#20D5C5]" />
-            Surveillance Sector Map
-          </span>
-          <span className="text-xs font-mono text-[#20D5C5]">
-            DEMO SECTOR
-          </span>
+        <div className="h-[520px] rounded-xl overflow-hidden border border-netra-line">
+          <CameraMap cameras={cameras} alerts={openAlerts} />
         </div>
 
-        <div className="h-[520px] rounded-xl overflow-hidden border border-white/[0.08]">
-          <CameraMap cameras={cameras} />
-        </div>
-
-        {/* Camera List Footer Grid */}
-        <div className="mt-5 pt-4 border-t border-white/[0.06]">
+        <div className="mt-5 pt-4 border-t border-netra-line">
           {cameras.length === 0 ? (
-            <div className="py-6 text-center text-xs font-mono text-slate-500">
-              No cameras registered in this demo sector yet. Cameras will appear here once connected.
+            <div className="py-6 text-center text-xs font-mono text-netra-muted">
+              No cameras registered in this sector yet.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {cameras.map((cam) => (
                 <div
                   key={cam.id}
-                  className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex items-center justify-between"
+                  className="p-3.5 rounded-xl bg-netra-card2 border border-netra-line flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <Radio className={`w-4 h-4 ${cam.status === "online" ? "text-[#39D98A]" : "text-slate-500"}`} />
+                    <Radio className={`w-4 h-4 ${cam.status === "online" ? "text-netra-normal" : "text-netra-muted2"}`} />
                     <div>
-                      <div className="text-xs font-semibold text-white">{cam.name}</div>
-                      <div className="text-[11px] font-mono text-slate-400 capitalize">
-                        Zone: {cam.sector}
-                      </div>
+                      <div className="text-xs font-semibold text-netra-text">{cam.name}</div>
+                      <div className="text-[11px] font-mono text-netra-muted capitalize">Zone: {cam.sector}</div>
                     </div>
                   </div>
                   <span
                     className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full border ${
                       cam.status === "online"
-                        ? "bg-emerald-500/10 text-[#39D98A] border-emerald-500/20"
-                        : "bg-slate-800 text-slate-400 border-slate-700"
+                        ? "bg-netra-normal/10 text-netra-normal border-netra-normal/20"
+                        : "bg-netra-card text-netra-muted border-netra-line"
                     }`}
                   >
                     {cam.status}
@@ -89,5 +97,14 @@ export default function MapPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-netra-muted">
+      <span className={`w-2 h-2 rounded-full ${color}`} />
+      {label}
+    </span>
   );
 }

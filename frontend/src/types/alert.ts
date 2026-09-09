@@ -23,5 +23,14 @@ export type Alert = {
   trajectory?: string;
   evidence_path?: string | null;
   timestamp: string;
+  snapshot_url?: string | null;
+  clip_url?: string | null;
+  clip_start?: number;
+  clip_end?: number;
+  trajectory_points?: { x: number; y: number }[];
+  night?: boolean;
+  luminance?: number;
+  object_class?: string;
+  clip_name?: string;
 };
 

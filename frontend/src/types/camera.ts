@@ -10,4 +10,6 @@ export type Camera = {
   stream_url?: string | null;
   webrtc_url?: string | null;
   hls_url?: string | null;
+  scenario?: "loitering" | "border-crossing" | "group-movement" | "animal" | "night";
+  videoUrl?: string | null;
 };

@@ -13,36 +13,36 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
   const negativeContributors = items.filter((item) => item.delta < 0);
 
   return (
-    <div className={`p-4 sm:p-5 rounded-xl bg-[#0c141c] border border-[#243140] space-y-4 ${className}`}>
+    <div className={`n-card p-4 sm:p-5 space-y-4 ${className}`}>
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#243140]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#1A343C]">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-[#3dd6c6]" />
-          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#e8eef5]">
+          <Activity className="w-4 h-4 text-[#26E5E5]" />
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#F4F8FA]">
             Risk & Context Breakdown
           </h3>
         </div>
-        <span className="text-[10px] font-mono text-[#8fa3b8]">
+        <span className="text-[10px] font-mono text-[#8B9AA6]">
           CONTEXTUAL SCORING EXPLAINABILITY
         </span>
       </div>
 
-      <p className="text-xs text-[#8fa3b8] leading-relaxed">
+      <p className="text-xs text-[#8B9AA6] leading-relaxed">
         Contributing factors from the contextual risk engine. Positive signals increase risk, while suppressing signals reduce noisy detections.
       </p>
 
       {items.length === 0 ? (
-        <div className="py-6 text-center font-mono text-xs text-[#8fa3b8] bg-[#101820] rounded-lg border border-[#1b2b3a]">
+        <div className="py-6 text-center font-mono text-xs text-[#8B9AA6] bg-[#0C141C] rounded-lg border border-[#1b2b3a]">
           No explicit risk factors registered for this incident record.
         </div>
       ) : (
         /* Breakdown Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Positive Contributing Factors */}
-        <div className="space-y-2.5 p-3 rounded-lg bg-[#101820] border border-[#1b2b3a]">
-          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#5ad67a] pb-1.5 border-b border-[#243140]/60">
+        <div className="space-y-2.5 p-3 rounded-lg bg-[#0C141C] border border-[#1b2b3a]">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#35D07F] pb-1.5 border-b border-[#1A343C]/60">
             <span className="flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5 text-[#5ad67a]" />
+              <ShieldAlert className="w-3.5 h-3.5 text-[#35D07F]" />
               Risk Escalators (Positive)
             </span>
             <span>+{positiveContributors.reduce((acc, curr) => acc + curr.delta, 0)} pts</span>
@@ -52,25 +52,25 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
             {positiveContributors.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2 rounded bg-[#0c141c] border border-[#243140] hover:border-[#5ad67a]/40 transition-colors"
+                className="flex items-center justify-between p-2 rounded bg-[#101A24] border border-[#1A343C] hover:border-[#35D07F]/40 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1 rounded bg-[#14321c] text-[#5ad67a] shrink-0">
+                  <div className="p-1 rounded bg-[rgba(53,208,127,0.12)] text-[#35D07F] shrink-0">
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </div>
                   <div className="truncate">
-                    <div className="text-xs font-semibold text-[#e8eef5] truncate">
+                    <div className="text-xs font-semibold text-[#F4F8FA] truncate">
                       {item.signal}
                     </div>
                     {item.description && (
-                      <div className="text-[10px] text-[#8fa3b8] truncate font-mono">
+                      <div className="text-[10px] text-[#8B9AA6] truncate font-mono">
                         {item.description}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <span className="ml-2 shrink-0 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#14321c] text-[#5ad67a] border border-[#5ad67a]/50">
+                <span className="ml-2 shrink-0 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[rgba(53,208,127,0.12)] text-[#35D07F] border border-[#35D07F]/50">
                   +{item.delta}
                 </span>
               </div>
@@ -79,8 +79,8 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
         </div>
 
         {/* Negative / Suppressing Factors */}
-        <div className="space-y-2.5 p-3 rounded-lg bg-[#101820] border border-[#1b2b3a]">
-          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#ff7a7a] pb-1.5 border-b border-[#243140]/60">
+        <div className="space-y-2.5 p-3 rounded-lg bg-[#0C141C] border border-[#1b2b3a]">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#ff7a7a] pb-1.5 border-b border-[#1A343C]/60">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#ff7a7a]" />
               Risk Suppressors (Negative)
@@ -92,25 +92,25 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
             {negativeContributors.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2 rounded bg-[#0c141c] border border-[#243140] hover:border-[#ff5a5a]/40 transition-colors"
+                className="flex items-center justify-between p-2 rounded bg-[#101A24] border border-[#1A343C] hover:border-[#FF4D67]/40 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1 rounded bg-[#3a1515] text-[#ff7a7a] shrink-0">
+                  <div className="p-1 rounded bg-[rgba(255,77,103,0.12)] text-[#ff7a7a] shrink-0">
                     <ArrowDownRight className="w-3.5 h-3.5" />
                   </div>
                   <div className="truncate">
-                    <div className="text-xs font-semibold text-[#e8eef5] truncate">
+                    <div className="text-xs font-semibold text-[#F4F8FA] truncate">
                       {item.signal}
                     </div>
                     {item.description && (
-                      <div className="text-[10px] text-[#8fa3b8] truncate font-mono">
+                      <div className="text-[10px] text-[#8B9AA6] truncate font-mono">
                         {item.description}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <span className="ml-2 shrink-0 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#3a1515] text-[#ff7a7a] border border-[#ff5a5a]/50">
+                <span className="ml-2 shrink-0 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[rgba(255,77,103,0.12)] text-[#ff7a7a] border border-[#FF4D67]/50">
                   {item.delta}
                 </span>
               </div>
@@ -120,9 +120,9 @@ export default function RiskBreakdown({ breakdown, className = "" }: RiskBreakdo
       </div>
       )}
 
-      <div className="text-[10px] font-mono text-[#8fa3b8] flex items-center justify-between pt-2 border-t border-[#243140]/60">
+      <div className="text-[10px] font-mono text-[#8B9AA6] flex items-center justify-between pt-2 border-t border-[#1A343C]/60">
         <span>MODEL: MULTI-SIGNAL FUSION ENGINE</span>
-        <span className="text-[#3dd6c6]">DELTAS NORMALIZED IN RISK SCORE</span>
+        <span className="text-[#26E5E5]">DELTAS NORMALIZED IN RISK SCORE</span>
       </div>
     </div>
   );

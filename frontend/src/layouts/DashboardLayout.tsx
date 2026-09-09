@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
+import { DemoSessionProvider } from "../contexts/DemoSessionContext";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -10,29 +11,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#071011] text-[#F4F7F7] flex relative selection:bg-[#19D3C5]/25 selection:text-[#19D3C5]">
-      {/* Subtle top ambient radial lighting matching Dribbble reference */}
+    <DemoSessionProvider>
+    <div className="soc-shell min-h-screen bg-netra-bg text-netra-text flex relative selection:bg-netra-accent/25 selection:text-netra-accent">
       <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[380px] bg-gradient-to-b from-[#19D3C5]/[0.045] via-[#35D07F]/[0.02] to-transparent rounded-full blur-3xl pointer-events-none z-0"
+        className="fixed inset-0 pointer-events-none z-0"
         aria-hidden="true"
+        style={{
+          background: `
+            radial-gradient(720px 380px at 18% 0%, rgba(38,229,229,0.10), transparent 62%),
+            radial-gradient(900px 420px at 82% 8%, rgba(20,90,110,0.18), transparent 58%),
+            radial-gradient(700px 500px at 50% 100%, rgba(38,229,229,0.05), transparent 70%),
+            linear-gradient(180deg, #070B12 0%, #08141A 55%, #070B12 100%)
+          `,
+        }}
+      />
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-[0.028]"
+        aria-hidden="true"
+        style={{
+          backgroundImage:
+            "linear-gradient(#26E5E5 1px, transparent 1px), linear-gradient(90deg, #26E5E5 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+        }}
       />
 
-      {/* Sidebar Navigation */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Main Command Center Column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden z-10">
-        {/* Top Navigation Bar */}
         <TopBar
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           isSidebarOpen={isSidebarOpen}
         />
-
-        {/* Main Content Area */}
         <main className="flex-1 p-4 sm:p-6 lg:p-7 max-w-[1680px] w-full mx-auto overflow-y-auto">
           {children}
         </main>
       </div>
     </div>
+    </DemoSessionProvider>
   );
 }

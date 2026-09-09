@@ -7,10 +7,11 @@ import {
   Map as MapIcon,
   BarChart3,
   X,
-  Shield,
-  Radio
+  Cpu,
 } from "lucide-react";
 import { useAlerts } from "../hooks/useAlerts";
+import { useAuth } from "../hooks/useAuth";
+import NetraLogo from "./NetraLogo";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -28,44 +29,30 @@ const navLinks = [
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const alerts = useAlerts();
+  const { user } = useAuth();
   const openAlertsCount = alerts.filter((a) => a.status === "open").length;
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/70 z-40 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-[#071011]/95 backdrop-blur-xl border-r border-white/[0.07] p-4 flex flex-col z-50 transition-transform duration-200 ease-in-out ${
+        className={`fixed md:sticky top-0 left-0 h-screen w-[232px] bg-[#070B12]/80 backdrop-blur-xl border-r border-netra-accent/15 p-3.5 flex flex-col z-50 transition-transform duration-200 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        {/* Brand Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] px-2 pt-1">
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#19D3C5]/20 to-[#35D07F]/10 border border-[#19D3C5]/30">
-              <Shield className="w-4 h-4 text-[#19D3C5]" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#35D07F] ring-2 ring-[#071011] animate-pulse" />
-            </div>
-            <div>
-              <div className="font-bold text-sm tracking-tight text-white">NETRA</div>
-              <div className="text-[10px] text-slate-400 font-mono tracking-tight">
-                NETRA • SIH PROTOTYPE
-              </div>
-            </div>
-          </div>
-
-          {/* Close button on mobile */}
+        <div className="flex items-center justify-between px-1.5 pt-1 pb-4 border-b border-netra-accent/12">
+          <NetraLogo compact />
           {onClose && (
             <button
               onClick={onClose}
-              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+              className="md:hidden p-1.5 rounded-lg text-netra-muted hover:text-netra-text hover:bg-white/[0.05] transition-colors"
               aria-label="Close sidebar"
             >
               <X className="w-4 h-4" />
@@ -73,74 +60,76 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           )}
         </div>
 
-        {/* Navigation Section */}
-        <div className="mt-5 flex-1 flex flex-col justify-between">
-          <nav className="flex flex-col gap-1" aria-label="Main Navigation">
-            <div className="px-3 pb-2 text-[10px] font-mono font-medium uppercase tracking-wider text-slate-500">
-              Operations
+        <nav className="mt-4 flex-1 flex flex-col gap-0.5" aria-label="Main Navigation">
+          {navLinks.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `group flex items-center justify-between px-2 py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                    isActive
+                      ? "bg-netra-accent/10 text-netra-text"
+                      : "text-netra-muted hover:bg-white/[0.03] hover:text-netra-text"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          isActive
+                            ? "bg-netra-accent text-netra-bg shadow-[0_0_18px_-2px_rgba(38,229,229,0.85)]"
+                            : "bg-white/[0.04] text-netra-muted group-hover:text-netra-text border border-white/[0.06]"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </span>
+                      <span>{item.label}</span>
+                    </div>
+                    {item.showBadge && openAlertsCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full bg-netra-critical/20 text-netra-critical border border-netra-critical/30 flex items-center justify-center">
+                        {openAlertsCount}
+                      </span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto space-y-3 pt-3 border-t border-netra-accent/12">
+          <div className="n-card-2 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-netra-muted flex items-center gap-1.5">
+                <Cpu className="w-3 h-3 text-netra-accent" />
+                AI Analytics Engine
+              </span>
+              <span className="text-[9px] font-semibold text-netra-normal">Active</span>
             </div>
-
-            {navLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
-                      isActive
-                        ? "bg-[#19D3C5]/10 text-[#19D3C5] border border-[#19D3C5]/20 shadow-[0_0_15px_-3px_rgba(25,211,197,0.15)] font-semibold"
-                        : "text-slate-400 hover:bg-white/[0.03] hover:text-slate-200 border border-transparent"
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-105" />
-                    <span>{item.label}</span>
-                  </div>
-
-                  {item.showBadge && openAlertsCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      {openAlertsCount}
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Telemetry & Status Badge */}
-          <div className="pt-4 border-t border-white/[0.06] mt-auto">
-            <div className="p-3 rounded-xl bg-[#0D171B] border border-white/[0.06] flex flex-col gap-2 shadow-inner">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-                  <Radio className="w-3 h-3 text-[#19D3C5]" />
-                  AI ANALYTICS ENGINE
-                </span>
-                <span className="text-[10px] font-mono font-semibold text-[#35D07F] px-2 py-0.5 rounded-full bg-[#35D07F]/10 border border-[#35D07F]/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#35D07F] animate-ping" />
-                  Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>DETECTION</span>
-                <span className="text-slate-200 font-medium">YOLO</span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>TRACKING</span>
-                <span className="text-slate-200 font-medium">ByteTrack</span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>MODE</span>
-                <span className="text-slate-200 font-medium">CPU-FIRST</span>
-              </div>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-mono text-netra-muted2">
+              <span>Detect</span>
+              <span className="text-right text-netra-text">On-device</span>
+              <span>Track</span>
+              <span className="text-right text-netra-text">Active</span>
             </div>
+          </div>
 
-            <div className="mt-3 px-1 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>BUILD v0.1.0</span>
-              <span>NETRA • SIH PROTOTYPE</span>
+          <div className="flex items-center gap-2.5 px-1">
+            <div className="w-8 h-8 rounded-full bg-netra-card2 border border-netra-line flex items-center justify-center text-[10px] font-semibold text-netra-accent">
+              {user?.name ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "OP"}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[12px] font-medium text-netra-text truncate">
+                {user?.name || "Operator"}
+              </div>
+              <div className="text-[10px] text-netra-muted truncate">
+                {user?.role || "Operator"}
+              </div>
             </div>
           </div>
         </div>

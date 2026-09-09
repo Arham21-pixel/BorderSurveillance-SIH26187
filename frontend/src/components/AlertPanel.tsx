@@ -17,8 +17,8 @@ export default function AlertPanel({
 }: AlertPanelProps) {
   if (alerts.length === 0) {
     return (
-      <div className="p-8 text-center bg-[#101820] border border-white/[0.06] rounded-2xl text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#39D98A]">
+      <div className="p-8 text-center n-card text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+        <div className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#35D07F]">
           <ShieldCheck className="w-4 h-4" />
         </div>
         <p className="font-medium text-slate-300">All Clear</p>

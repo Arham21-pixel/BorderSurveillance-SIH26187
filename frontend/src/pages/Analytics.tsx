@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAlerts } from "../hooks/useAlerts";
 import { useCameras } from "../hooks/useCameras";
+import { useDemoSessionOptional } from "../contexts/DemoSessionContext";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -15,23 +16,25 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { Activity, AlertTriangle, Camera, Layers, TrendingUp } from "lucide-react";
+import { Activity, AlertTriangle, Camera, Layers, Moon, PawPrint, TrendingUp } from "lucide-react";
 import { normalizeSeverity } from "../components/RiskBadge";
+import PageHeader from "../components/ui/PageHeader";
+import KpiCard from "../components/ui/KpiCard";
+import LiveBadge from "../components/ui/LiveBadge";
+import { EVENT_TYPE_LABELS } from "../lib/demoScenarios";
+import { CHART_TOOLTIP, COLORS } from "../lib/constants";
 
-type TrendPoint = {
-  time: string;
-  alerts: number;
-};
+type TrendPoint = { time: string; alerts: number; risk: number };
 
 const DEMO_TIMELINE: TrendPoint[] = [
-  { time: "14:00", alerts: 2 },
-  { time: "15:00", alerts: 1 },
-  { time: "16:00", alerts: 3 },
-  { time: "17:00", alerts: 5 },
-  { time: "18:00", alerts: 2 },
-  { time: "19:00", alerts: 4 },
-  { time: "20:00", alerts: 3 },
-  { time: "21:00", alerts: 4 },
+  { time: "14:00", alerts: 2, risk: 22 },
+  { time: "15:00", alerts: 1, risk: 18 },
+  { time: "16:00", alerts: 3, risk: 34 },
+  { time: "17:00", alerts: 5, risk: 52 },
+  { time: "18:00", alerts: 2, risk: 28 },
+  { time: "19:00", alerts: 4, risk: 41 },
+  { time: "20:00", alerts: 3, risk: 37 },
+  { time: "21:00", alerts: 4, risk: 48 },
 ];
 
 const DEMO_CAMERA_ACTIVITY = [
@@ -40,17 +43,22 @@ const DEMO_CAMERA_ACTIVITY = [
   { camera: "DEMO-03", alerts: 6 },
 ];
 
+const DEMO_EVENT_TYPES = [
+  { type: "Restricted zone", count: 8 },
+  { type: "Loitering", count: 6 },
+  { type: "Night / low-light", count: 5 },
+  { type: "Group walking", count: 3 },
+  { type: "Animal", count: 3 },
+];
+
 export default function Analytics() {
   const alerts = useAlerts();
-  useCameras(); // Keeps camera data warm for other pages in the session.
-
-  const usingDemoData = alerts.length === 0;
+  const cameras = useCameras();
+  const session = useDemoSessionOptional();
+  const usingDemoData = !session && alerts.length === 0;
 
   const severityCounts = useMemo(() => {
-    if (usingDemoData) {
-      return { critical: 2, high: 6, suspicious: 10, normal: 6 };
-    }
-
+    if (usingDemoData) return { critical: 2, high: 6, suspicious: 10, normal: 6 };
     const counts = { critical: 0, high: 0, suspicious: 0, normal: 0 };
     alerts.forEach((alert) => {
       const sev = normalizeSeverity(alert.severity);
@@ -70,36 +78,40 @@ export default function Analytics() {
     if (usingDemoData) return 48;
     if (alerts.length === 0) return 0;
     const avg = alerts.reduce((sum, alert) => sum + (alert.risk_score ?? 0), 0) / alerts.length;
-    return Math.round(avg * 100);
+    return avg <= 1 ? Math.round(avg * 100) : Math.round(avg);
   }, [alerts, usingDemoData]);
 
   const severityData = [
-    { name: "Critical", value: severityCounts.critical, color: "#FF4D67" },
-    { name: "High", value: severityCounts.high, color: "#FF8A2A" },
-    { name: "Suspicious", value: severityCounts.suspicious, color: "#F2C94C" },
-    { name: "Normal", value: severityCounts.normal, color: "#35D07F" },
+    { name: "Critical", value: severityCounts.critical, color: COLORS.critical },
+    { name: "High", value: severityCounts.high, color: COLORS.high },
+    { name: "Suspicious", value: severityCounts.suspicious, color: COLORS.suspicious },
+    { name: "Normal", value: severityCounts.normal, color: COLORS.normal },
   ];
 
   const timelineData = useMemo<TrendPoint[]>(() => {
     if (usingDemoData) return DEMO_TIMELINE;
-
     const now = new Date();
-    const map: Record<string, TrendPoint> = {};
+    const map: Record<string, { alerts: number; riskSum: number }> = {};
     for (let i = 7; i >= 0; i--) {
       const slot = new Date(now.getTime() - i * 60 * 60 * 1000);
       const key = `${slot.getHours().toString().padStart(2, "0")}:00`;
-      map[key] = { time: key, alerts: 0 };
+      map[key] = { alerts: 0, riskSum: 0 };
     }
-
     alerts.forEach((alert) => {
       const stamp = new Date(alert.timestamp);
       const diffHours = (now.getTime() - stamp.getTime()) / (1000 * 60 * 60);
       if (diffHours < 0 || diffHours > 8) return;
       const key = `${stamp.getHours().toString().padStart(2, "0")}:00`;
-      if (map[key]) map[key].alerts += 1;
+      if (!map[key]) return;
+      map[key].alerts += 1;
+      const score = alert.risk_score ?? 0;
+      map[key].riskSum += score <= 1 ? score * 100 : score;
     });
-
-    return Object.values(map);
+    return Object.entries(map).map(([time, v]) => ({
+      time,
+      alerts: v.alerts,
+      risk: v.alerts ? Math.round(v.riskSum / v.alerts) : 0,
+    }));
   }, [alerts, usingDemoData]);
 
   const cameraActivity = useMemo(() => {
@@ -114,217 +126,227 @@ export default function Analytics() {
       .slice(0, 5);
   }, [alerts, usingDemoData]);
 
-  const topCamera = cameraActivity[0]?.camera ?? "DEMO-01";
+  const eventTypes = useMemo(() => {
+    if (usingDemoData) return DEMO_EVENT_TYPES;
+    const counts: Record<string, number> = {};
+    alerts.forEach((alert) => {
+      const raw = alert.event_type || alert.title || "event";
+      const key = EVENT_TYPE_LABELS[raw] ?? raw.replace(/_/g, " ");
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [alerts, usingDemoData]);
+
+  const animalCount = usingDemoData
+    ? 3
+    : alerts.filter((a) => (a.event_type ?? "").includes("animal") || a.object_class === "animal").length;
+  const nightCount = usingDemoData
+    ? 6
+    : alerts.filter((a) => a.night || a.event_type === "night_activity").length;
+
+  const lightingData = usingDemoData
+    ? [
+        { name: "Night / low-light", value: 6, color: COLORS.high },
+        { name: "Day", value: 18, color: COLORS.accent },
+      ]
+    : [
+        { name: "Night / low-light", value: nightCount, color: COLORS.high },
+        { name: "Day", value: Math.max(0, totalAlerts - nightCount), color: COLORS.accent },
+      ];
+
+  const objectData = usingDemoData
+    ? [
+        { name: "Person", value: 21, color: COLORS.accent },
+        { name: "Animal", value: 3, color: COLORS.suspicious },
+      ]
+    : [
+        { name: "Animal", value: animalCount, color: COLORS.suspicious },
+        { name: "Person / other", value: Math.max(0, totalAlerts - animalCount), color: COLORS.accent },
+      ];
+
+  const activeCameras = cameras.length
+    ? `${cameras.filter((c) => c.status === "online").length} / ${cameras.length}`
+    : "1 / 3";
 
   return (
-    <div className="space-y-6 sm:space-y-7 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-              Analytics & Event Insights
-            </h1>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border ${
-                usingDemoData
-                  ? "bg-[#F2C94C]/15 text-[#F2C94C] border-[#F2C94C]/25"
-                  : "bg-[#35D07F]/15 text-[#35D07F] border-[#35D07F]/25"
-              }`}
-            >
-              {usingDemoData ? "SIMULATED / DEMO DATA" : "LIVE EVENT DATA"}
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Trends across alerts, cameras, event types and risk levels.
-          </p>
-        </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader
+        title="Analytics & Event Insights"
+        subtitle="Alerts, cameras, night/low-light context, animal movement and risk mix from the feeds."
+        badge={
+          <LiveBadge
+            label={session ? "FROM CAMERA FEEDS" : usingDemoData ? "SAMPLE BASELINE" : "LIVE EVENT DATA"}
+            tone={usingDemoData ? "demo" : "live"}
+          />
+        }
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-7 gap-4">
+        <KpiCard label="Total Alerts" value={totalAlerts} icon={<Activity className="w-4 h-4" />} />
+        <KpiCard label="Critical" value={severityCounts.critical} tone="critical" icon={<AlertTriangle className="w-4 h-4 text-netra-critical" />} />
+        <KpiCard label="High" value={severityCounts.high} tone="high" icon={<AlertTriangle className="w-4 h-4 text-netra-high" />} />
+        <KpiCard label="Average Risk" value={avgRiskScore} />
+        <KpiCard label="Active Cameras" value={activeCameras} tone="accent" icon={<Camera className="w-4 h-4" />} />
+        <KpiCard label="Night / low-light" value={nightCount} tone="high" icon={<Moon className="w-4 h-4" />} />
+        <KpiCard label="Animal movement" value={animalCount} icon={<PawPrint className="w-4 h-4" />} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D171B] border border-white/[0.07] shadow-lg">
-          <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
-            <span>Total Alerts</span>
-            <Activity className="w-4 h-4 text-[#19D3C5]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-2 font-mono">{totalAlerts}</div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D171B] border border-white/[0.07] shadow-lg">
-          <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
-            <span>Critical</span>
-            <AlertTriangle className="w-4 h-4 text-[#FF4D67]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FF4D67] mt-2 font-mono">
-            {severityCounts.critical}
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D171B] border border-white/[0.07] shadow-lg">
-          <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
-            <span>High</span>
-            <AlertTriangle className="w-4 h-4 text-[#FF8A2A]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FF8A2A] mt-2 font-mono">
-            {severityCounts.high}
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D171B] border border-white/[0.07] shadow-lg">
-          <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
-            <span>Avg Risk</span>
-            <TrendingUp className="w-4 h-4 text-[#19D3C5]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-2 font-mono">
-            {avgRiskScore} / 100
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D171B] border border-white/[0.07] col-span-2 lg:col-span-1 shadow-lg">
-          <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
-            <span>Top Camera</span>
-            <Camera className="w-4 h-4 text-[#19D3C5]" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#19D3C5] mt-2 font-mono">
-            {topCamera}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-[#0D171B] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-white/[0.06]">
-            <div>
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[#19D3C5]" />
-                Alert Frequency Over Time
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Hourly alert counts from video events and contextual risk scoring.
-              </p>
-            </div>
-          </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text flex items-center gap-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-netra-accent" />
+            Alerts Over Time
+          </h2>
+          <p className="text-xs text-netra-muted mb-4">Hourly alert counts from video events.</p>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="alertsGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#19D3C5" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#19D3C5" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.32} />
+                    <stop offset="95%" stopColor={COLORS.accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="time" stroke="#617079" fontSize={11} tickLine={false} />
-                <YAxis stroke="#617079" fontSize={11} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0D171B",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    borderRadius: "12px",
-                    color: "#F4F7F7",
-                    fontSize: "12px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="alerts"
-                  stroke="#19D3C5"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#alertsGrad)"
-                  name="Total Alerts"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(38,229,229,0.08)" vertical={false} />
+                <XAxis dataKey="time" stroke={COLORS.muted2} fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke={COLORS.muted2} fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Area type="monotone" dataKey="alerts" stroke={COLORS.accent} strokeWidth={2.5} fill="url(#alertsGrad)" name="Alerts" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-[#0D171B] border border-white/[0.07] rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-xl">
-          <div className="pb-3.5 border-b border-white/[0.06]">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#19D3C5]" />
-              Alert Severity Distribution
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Critical, high, suspicious, and normal alert mix.
-            </p>
-          </div>
-
-          <div className="relative h-48 flex items-center justify-center my-2">
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text flex items-center gap-2 mb-1">
+            <Layers className="w-4 h-4 text-netra-accent" />
+            Alerts by Severity
+          </h2>
+          <p className="text-xs text-netra-muted mb-2">Critical, high, suspicious, and normal mix.</p>
+          <div className="relative h-52 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={severityData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={75}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {severityData.map((entry, index) => (
-                    <Cell key={`severity-${index}`} fill={entry.color} stroke="#0D171B" strokeWidth={2} />
+                <Pie data={severityData} cx="50%" cy="50%" innerRadius={52} outerRadius={72} paddingAngle={4} dataKey="value">
+                  {severityData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} stroke={COLORS.card} strokeWidth={2} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0D171B",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    borderRadius: "12px",
-                    color: "#F4F7F7",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold font-mono text-white">{totalAlerts}</span>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                Total Alerts
-              </span>
+              <span className="text-2xl font-bold text-netra-text">{totalAlerts}</span>
+              <span className="text-[10px] text-netra-muted uppercase tracking-wider">Total</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-[#0D171B] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
-          <div>
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Camera className="w-4 h-4 text-[#19D3C5]" />
-              Alerts by Camera
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Camera-wise alert volume for the current dashboard data window.
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text mb-4">Alerts by Camera</h2>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cameraActivity} layout="vertical" margin={{ top: 5, right: 16, left: 8, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} horizontal={false} />
+                <XAxis type="number" stroke={COLORS.muted2} fontSize={11} tickLine={false} allowDecimals={false} />
+                <YAxis type="category" dataKey="camera" stroke={COLORS.muted2} fontSize={11} tickLine={false} width={78} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Bar dataKey="alerts" fill={COLORS.accent} radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="h-64 w-full">
-          {cameraActivity.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-xs text-slate-500">
-              No camera alert activity available.
-            </div>
-          ) : (
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text mb-4">Event Types</h2>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cameraActivity} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis type="number" stroke="#617079" fontSize={11} tickLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="camera" stroke="#617079" fontSize={11} tickLine={false} width={90} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0D171B",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    borderRadius: "12px",
-                    color: "#F4F7F7",
-                    fontSize: "12px",
-                  }}
-                  formatter={(value: number) => [`${value} alerts`, "Total Alerts"]}
-                />
-                <Bar dataKey="alerts" fill="#19D3C5" radius={[0, 6, 6, 0]} name="Total Alerts" />
+              <BarChart data={eventTypes} margin={{ top: 5, right: 8, left: -16, bottom: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(38,229,229,0.08)" vertical={false} />
+                <XAxis dataKey="type" stroke={COLORS.muted2} fontSize={10} tickLine={false} interval={0} angle={-18} textAnchor="end" />
+                <YAxis stroke={COLORS.muted2} fontSize={11} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Bar dataKey="count" fill={COLORS.accent} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          )}
+          </div>
+        </div>
+
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text mb-4">Risk Trend</h2>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={timelineData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.high} stopOpacity={0.28} />
+                    <stop offset="95%" stopColor={COLORS.high} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(38,229,229,0.08)" vertical={false} />
+                <XAxis dataKey="time" stroke={COLORS.muted2} fontSize={11} tickLine={false} />
+                <YAxis stroke={COLORS.muted2} fontSize={11} tickLine={false} domain={[0, 100]} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Area type="monotone" dataKey="risk" stroke={COLORS.high} strokeWidth={2} fill="url(#riskGrad)" name="Avg risk" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text flex items-center gap-2 mb-1">
+            <Moon className="w-4 h-4 text-netra-high" />
+            Lighting mix
+          </h2>
+          <p className="text-xs text-netra-muted mb-4">
+            Night count is from frame luminance on the video, not a thermal camera.
+          </p>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={lightingData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(38,229,229,0.08)" vertical={false} />
+                <XAxis dataKey="name" stroke={COLORS.muted2} fontSize={11} tickLine={false} />
+                <YAxis stroke={COLORS.muted2} fontSize={11} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {lightingData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="n-card p-5 sm:p-6">
+          <h2 className="text-[13px] font-semibold text-netra-text flex items-center gap-2 mb-1">
+            <PawPrint className="w-4 h-4 text-netra-accent" />
+            Object class mix
+          </h2>
+          <p className="text-xs text-netra-muted mb-4">
+            Animal movement uses on-device COCO classes (dog, cattle, bird, and similar).
+          </p>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={objectData} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(38,229,229,0.08)" vertical={false} />
+                <XAxis dataKey="name" stroke={COLORS.muted2} fontSize={11} tickLine={false} />
+                <YAxis stroke={COLORS.muted2} fontSize={11} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={CHART_TOOLTIP} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {objectData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

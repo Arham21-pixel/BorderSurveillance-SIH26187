@@ -39,7 +39,9 @@ export type AnalysisState =
 export type DemoMP4 =
   | "walking.mp4"
   | "loitering.mp4"
-  | "border crossing.mp4";
+  | "border crossing.mp4"
+  | "group movement.mp4"
+  | "animal demo.mp4";
 
 export const DEMO_MP4_OPTIONS: { value: DemoMP4; label: string; description: string }[] = [
   {
@@ -56,6 +58,16 @@ export const DEMO_MP4_OPTIONS: { value: DemoMP4; label: string; description: str
     value: "border crossing.mp4",
     label: "border crossing.mp4",
     description: "Restricted-zone / boundary-crossing demonstration",
+  },
+  {
+    value: "group movement.mp4",
+    label: "group movement",
+    description: "Group movement demonstration",
+  },
+  {
+    value: "animal demo.mp4",
+    label: "animal demo",
+    description: "Non-human object / animal demonstration",
   },
 ];
 

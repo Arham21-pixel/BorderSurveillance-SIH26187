@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAlerts } from "../hooks/useAlerts";
 import { useCameras } from "../hooks/useCameras";
 import AlertCard from "../components/AlertCard";
-import EvidenceViewer from "../components/EvidenceViewer";
+import EvidenceViewer, { hasAlertMedia } from "../components/EvidenceViewer";
 import RiskBadge, { normalizeSeverity } from "../components/RiskBadge";
 import AlertDetailsModal from "../components/AlertDetailsModal";
 import { ackAlert } from "../services/api";
@@ -16,10 +17,9 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  Activity,
   ShieldCheck,
-  AlertOctagon,
-  ExternalLink
+  ExternalLink,
+  FileSearch,
 } from "lucide-react";
 
 export default function Alerts() {
@@ -149,53 +149,44 @@ export default function Alerts() {
   // Stats
   const criticalCount = alerts.filter((a) => normalizeSeverity(a.severity) === "CRITICAL" && a.status === "open").length;
   const highCount = alerts.filter((a) => normalizeSeverity(a.severity) === "HIGH" && a.status === "open").length;
+  const suspiciousCount = alerts.filter((a) => normalizeSeverity(a.severity) === "SUSPICIOUS" && a.status === "open").length;
   const openCount = alerts.filter((a) => a.status === "open").length;
 
   return (
-    <div className="space-y-6 sm:space-y-7">
-      {/* Alert Center Header & KPI Counters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-white/[0.06]">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-netra-line">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase bg-[#FF8A2A]/15 text-[#FF8A2A] border border-[#FF8A2A]/25">
-              <AlertOctagon className="w-3 h-3 animate-pulse" />
-              Alert Management
-            </span>
-            <span className="text-xs font-mono text-slate-400">
-              Demo Surveillance Sector
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-            Security Alert Center
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="n-page-title">Security Alert Center</h1>
+          <p className="n-page-sub">
             Prioritized events generated from video, behaviour and contextual risk.
           </p>
         </div>
 
-        {/* Severity Counters */}
-        <div className="flex items-center gap-2.5 text-xs">
-          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-[#FF4D67] animate-ping" />
-            <span className="text-[#FF4D67] font-bold font-mono">{criticalCount}</span>
-            <span className="text-slate-400">Critical</span>
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <div className="px-3.5 py-2 rounded-xl n-card-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-netra-critical" />
+            <span className="text-netra-critical font-bold font-mono">{criticalCount}</span>
+            <span className="text-netra-muted">Critical</span>
           </div>
-
-          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-[#FF8A2A]" />
-            <span className="text-[#FF8A2A] font-bold font-mono">{highCount}</span>
-            <span className="text-slate-400">High</span>
+          <div className="px-3.5 py-2 rounded-xl n-card-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-netra-high" />
+            <span className="text-netra-high font-bold font-mono">{highCount}</span>
+            <span className="text-netra-muted">High</span>
           </div>
-
-          <div className="px-3.5 py-2 rounded-xl bg-[#101820] border border-white/[0.07] flex items-center gap-2 shadow-sm">
-            <span className="text-[#19D3C5] font-bold font-mono">{openCount}</span>
-            <span className="text-slate-400">Total Open</span>
+          <div className="px-3.5 py-2 rounded-xl n-card-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-netra-suspicious" />
+            <span className="text-netra-suspicious font-bold font-mono">{suspiciousCount}</span>
+            <span className="text-netra-muted">Suspicious</span>
+          </div>
+          <div className="px-3.5 py-2 rounded-xl n-card-2 flex items-center gap-2">
+            <span className="text-netra-accent font-bold font-mono">{openCount}</span>
+            <span className="text-netra-muted">Open Alerts</span>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#101820] border border-white/[0.07] space-y-3.5 text-xs shadow-xl">
+      <div className="n-card p-4 sm:p-5 space-y-3.5 text-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Keyword Search Input */}
           <div className="relative flex-1 max-w-md">
@@ -208,7 +199,7 @@ export default function Alerts() {
                 setCurrentPage(1);
               }}
               placeholder="Search alert reason, camera, track ID..."
-              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#20D5C5]/50 transition-colors"
+              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#26E5E5]/50 transition-colors"
             />
           </div>
 
@@ -233,8 +224,8 @@ export default function Alerts() {
                         : sev === "SUSPICIOUS"
                         ? "bg-amber-500/15 text-amber-400 border-amber-500/40 font-semibold"
                         : sev === "NORMAL"
-                        ? "bg-emerald-500/15 text-[#39D98A] border-emerald-500/40 font-semibold"
-                        : "bg-[#20D5C5]/15 text-[#20D5C5] border-[#20D5C5]/40 font-semibold"
+                        ? "bg-emerald-500/15 text-[#35D07F] border-emerald-500/40 font-semibold"
+                        : "bg-[#26E5E5]/15 text-[#26E5E5] border-[#26E5E5]/40 font-semibold"
                       : "bg-white/[0.02] text-slate-400 border-white/[0.06] hover:text-white"
                   }`}
                 >
@@ -250,7 +241,7 @@ export default function Alerts() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Camera Dropdown */}
             <div className="flex items-center gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-[#20D5C5]" />
+              <Camera className="w-3.5 h-3.5 text-[#26E5E5]" />
               <span className="text-slate-400">Camera:</span>
               <select
                 value={cameraFilter}
@@ -258,11 +249,11 @@ export default function Alerts() {
                   setCameraFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
+                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#26E5E5]"
               >
-                <option value="ALL" className="bg-[#101820]">All Stations</option>
+                <option value="ALL" className="bg-[#0C141C]">All Stations</option>
                 {cameras.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-[#101820]">
+                  <option key={c.id} value={c.id} className="bg-[#0C141C]">
                     {c.name} ({c.id})
                   </option>
                 ))}
@@ -278,28 +269,28 @@ export default function Alerts() {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
+                className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#26E5E5]"
               >
-                <option value="ALL" className="bg-[#101820]">All Statuses</option>
-                <option value="open" className="bg-[#101820]">Open Only</option>
-                <option value="acknowledged" className="bg-[#101820]">Acknowledged Only</option>
+                <option value="ALL" className="bg-[#0C141C]">All Statuses</option>
+                <option value="open" className="bg-[#0C141C]">Open Only</option>
+                <option value="acknowledged" className="bg-[#0C141C]">Acknowledged Only</option>
               </select>
             </div>
           </div>
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#20D5C5]" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-[#26E5E5]" />
             <span className="text-slate-400">Sort By:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#20D5C5]"
+              className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#26E5E5]"
             >
-              <option value="newest" className="bg-[#101820]">Newest First</option>
-              <option value="oldest" className="bg-[#101820]">Oldest First</option>
-              <option value="risk_desc" className="bg-[#101820]">Highest Risk Score</option>
-              <option value="severity_desc" className="bg-[#101820]">Highest Severity</option>
+              <option value="newest" className="bg-[#0C141C]">Newest First</option>
+              <option value="oldest" className="bg-[#0C141C]">Oldest First</option>
+              <option value="risk_desc" className="bg-[#0C141C]">Highest Risk Score</option>
+              <option value="severity_desc" className="bg-[#0C141C]">Highest Severity</option>
             </select>
           </div>
         </div>
@@ -317,7 +308,7 @@ export default function Alerts() {
           </div>
 
           {paginatedAlerts.length === 0 ? (
-            <div className="p-12 text-center bg-[#101820] border border-white/[0.07] rounded-2xl text-slate-400 text-xs">
+            <div className="p-12 text-center n-card text-slate-400 text-xs">
               No security alerts match the current filter criteria.
             </div>
           ) : (
@@ -355,7 +346,7 @@ export default function Alerts() {
                       onClick={() => setCurrentPage(pageNum)}
                       className={`w-7 h-7 rounded-lg text-xs font-mono flex items-center justify-center transition-colors ${
                         currentPage === pageNum
-                          ? "bg-[#20D5C5] text-[#080D11] font-bold shadow-sm shadow-[#20D5C5]/30"
+                          ? "bg-[#26E5E5] text-[#070B12] font-bold shadow-sm shadow-[#26E5E5]/30"
                           : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/[0.06]"
                       }`}
                     >
@@ -380,14 +371,14 @@ export default function Alerts() {
         {/* Selected Alert Quick-Inspector Column (5 Cols) */}
         <div className="lg:col-span-5 space-y-5">
           {selectedAlert ? (
-            <div className="bg-[#101820] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-4 sticky top-20 shadow-xl">
+            <div className="n-card p-5 sm:p-6 space-y-4 sticky top-20">
               {/* Header */}
               <div className="flex items-start justify-between gap-3 pb-3.5 border-b border-white/[0.06]">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <RiskBadge severity={selectedAlert.severity} size="md" />
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-300">
-                      RISK SCORE: <span className="text-rose-400 font-bold">{((selectedAlert.risk_score ?? 0.88) * 100).toFixed(0)}%</span>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.03] border border-netra-line text-slate-300">
+                      RISK {((selectedAlert.risk_score ?? 0) <= 1 ? (selectedAlert.risk_score ?? 0) * 100 : (selectedAlert.risk_score ?? 0)).toFixed(0)}
                     </span>
                   </div>
                   <h2 className="text-base font-semibold text-white">
@@ -399,7 +390,7 @@ export default function Alerts() {
                   className={`text-[10px] font-medium uppercase px-2.5 py-0.5 rounded-full border ${
                     selectedAlert.status === "open"
                       ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                      : "bg-emerald-500/10 text-[#39D98A] border-emerald-500/20"
+                      : "bg-emerald-500/10 text-[#35D07F] border-emerald-500/20"
                   }`}
                 >
                   {selectedAlert.status}
@@ -408,7 +399,7 @@ export default function Alerts() {
 
               {/* Reason Summary Box */}
               <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs">
-                <div className="text-[10px] font-mono text-[#19D3C5] font-semibold uppercase mb-1">
+                <div className="text-[10px] font-mono text-[#26E5E5] font-semibold uppercase mb-1">
                   Contextual Risk Assessment:
                 </div>
                 <p className="text-slate-300 leading-relaxed">
@@ -418,66 +409,88 @@ export default function Alerts() {
 
               {/* Metadata Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Camera className="w-3 h-3 text-[#20D5C5]" />
-                    CAMERA
-                  </div>
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted">CAMERA</div>
                   <div className="font-semibold text-white mt-1">{selectedAlert.camera_id}</div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Activity className="w-3 h-3 text-amber-400" />
-                    EVENT TYPE
-                  </div>
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted">ZONE</div>
+                  <div className="font-semibold text-white mt-1">{selectedAlert.zone || "—"}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted">EVENT TYPE</div>
                   <div className="font-semibold text-white mt-1 uppercase">
-                    {selectedAlert.event_type || "ZONE_INTRUSION"}
+                    {selectedAlert.event_type || selectedAlert.title}
                   </div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#20D5C5]" />
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted">TRACK ID</div>
+                  <div className="font-semibold text-white mt-1">{selectedAlert.track_id ?? "—"}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-netra-accent" />
                     TIME
                   </div>
                   <div className="font-semibold text-white mt-1">{formatTime(selectedAlert.timestamp)}</div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-[#39D98A]" />
+                <div className="p-3 rounded-xl bg-netra-card2 border border-netra-line">
+                  <div className="text-[10px] text-netra-muted flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-netra-normal" />
                     EVIDENCE
                   </div>
-                  <div className="font-semibold text-[#39D98A] mt-1">
-                    {selectedAlert.evidence_path ? "SNAPSHOT READY" : "NONE"}
+                  <div className="font-semibold text-netra-normal mt-1">
+                    {hasAlertMedia(selectedAlert) ? "Captured" : "Pending"}
                   </div>
                 </div>
               </div>
+
+              {(selectedAlert.risk_breakdown?.length || selectedAlert.reason) && (
+                <div className="p-3.5 rounded-xl bg-netra-card2 border border-netra-line text-xs space-y-1.5">
+                  <div className="n-label">Reasons</div>
+                  {selectedAlert.risk_breakdown?.length
+                    ? selectedAlert.risk_breakdown.map((item) => (
+                        <div key={item.signal} className="flex justify-between text-netra-muted">
+                          <span>{item.signal}</span>
+                          <span className={item.delta >= 0 ? "text-netra-high font-mono" : "text-netra-normal font-mono"}>
+                            {item.delta >= 0 ? `+${item.delta}` : item.delta}
+                          </span>
+                        </div>
+                      ))
+                    : <p className="text-netra-muted">{selectedAlert.reason}</p>}
+                </div>
+              )}
 
               {/* Attached Evidence Viewer Component */}
               <div className="space-y-1.5">
                 <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
                   Evidence Media Attachment:
                 </div>
-                <EvidenceViewer path={selectedAlert.evidence_path} />
+                <EvidenceViewer alert={selectedAlert} path={selectedAlert.evidence_path} showTabs />
               </div>
 
               {/* Operator Action Controls */}
               <div className="pt-2 flex flex-col gap-2">
+                <Link
+                  to="/evidence"
+                  className="w-full py-2.5 px-3 rounded-xl bg-netra-accent text-netra-bg text-xs font-semibold flex items-center justify-center gap-1.5"
+                >
+                  <FileSearch className="w-3.5 h-3.5" />
+                  VIEW EVIDENCE
+                </Link>
                 <button
                   onClick={() => setShowDetailsModal(true)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-[#19D3C5] border border-white/[0.08] text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2.5 px-3 rounded-xl bg-transparent text-netra-accent border border-netra-line text-xs font-medium flex items-center justify-center gap-1.5 hover:border-netra-accent/40"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open Alert Details & Controls</span>
+                  <span>Open Alert Details</span>
                 </button>
 
                 <div className="flex gap-2">
                   {selectedAlert.status === "open" ? (
                     <button
                       onClick={() => handleAcknowledge(selectedAlert.id)}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#19D3C5] hover:bg-[#35D07F] text-[#071011] text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#19D3C5]/20"
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#26E5E5] hover:bg-[#35D07F] text-[#070B12] text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#26E5E5]/20"
                     >
                       <Check className="w-4 h-4" />
                       <span>Acknowledge</span>
@@ -492,7 +505,7 @@ export default function Alerts() {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center bg-[#101820] border border-white/[0.07] rounded-2xl text-slate-400 text-xs">
+            <div className="p-8 text-center n-card text-slate-400 text-xs">
               Select an alert from the queue to inspect evidence and event details.
             </div>
           )}

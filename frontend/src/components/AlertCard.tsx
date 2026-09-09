@@ -10,6 +10,7 @@ import {
   Activity,
   ShieldCheck
 } from "lucide-react";
+import { hasAlertMedia } from "./EvidenceViewer";
 
 interface AlertCardProps {
   alert: Alert;
@@ -47,13 +48,13 @@ export default function AlertCard({
       ? "group_formation"
       : "perimeter_anomaly");
 
-  const hasEvidence = Boolean(alert.evidence_path);
+  const hasEvidence = hasAlertMedia(alert);
   const isOpen = alert.status === "open";
   const riskToneClass =
     normSeverity === "CRITICAL"
       ? "text-[#FF4D67]"
       : normSeverity === "HIGH"
-      ? "text-[#FF8A2A]"
+      ? "text-[#FF922E]"
       : normSeverity === "SUSPICIOUS"
       ? "text-[#F2C94C]"
       : "text-[#35D07F]";
@@ -61,10 +62,10 @@ export default function AlertCard({
   return (
     <article
       onClick={() => onSelect?.(alert)}
-      className={`relative p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+      className={`relative p-4 n-card cursor-pointer transition-all duration-200 ${
         isSelected
-          ? "bg-[#141E28] border-[#20D5C5]/40 shadow-lg shadow-black/40"
-          : "bg-[#101820] border-white/[0.06] hover:border-white/[0.12] hover:bg-[#141E28]/50"
+          ? "border-netra-accent/45 shadow-[0_0_28px_-10px_rgba(38,229,229,0.55)]"
+          : "hover:border-netra-accent/30"
       }`}
     >
       {/* Subtle indicator strip on left */}
@@ -73,7 +74,7 @@ export default function AlertCard({
           normSeverity === "CRITICAL"
             ? "bg-[#FF4D67]"
             : normSeverity === "HIGH"
-            ? "bg-[#FF8A2A]"
+            ? "bg-[#FF922E]"
             : normSeverity === "SUSPICIOUS"
             ? "bg-[#F2C94C]"
             : "bg-[#35D07F]"
@@ -99,7 +100,7 @@ export default function AlertCard({
         </div>
 
         <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-          <Clock className="w-3 h-3 text-[#20D5C5]" />
+          <Clock className="w-3 h-3 text-[#26E5E5]" />
           {formatTime(alert.timestamp)}
         </span>
       </div>
@@ -117,7 +118,7 @@ export default function AlertCard({
       {/* Metadata Row: Event Type, Camera ID, Evidence Availability, Actions */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-white/[0.05] text-[11px] pl-2">
         <div className="flex flex-wrap items-center gap-2 text-slate-400">
-          <span className="flex items-center gap-1 font-mono text-[#20D5C5] bg-white/[0.02] px-2 py-0.5 rounded-md border border-white/[0.04]">
+          <span className="flex items-center gap-1 font-mono text-[#26E5E5] bg-white/[0.02] px-2 py-0.5 rounded-md border border-white/[0.04]">
             <Camera className="w-3 h-3" />
             {alert.camera_id}
           </span>
@@ -136,7 +137,7 @@ export default function AlertCard({
           >
             {hasEvidence ? (
               <>
-                <ShieldCheck className="w-3 h-3 text-[#39D98A]" />
+                <ShieldCheck className="w-3 h-3 text-[#35D07F]" />
                 <span>Evidence Ready</span>
               </>
             ) : (
@@ -156,7 +157,7 @@ export default function AlertCard({
                 e.stopPropagation();
                 onAcknowledge(alert.id);
               }}
-              className="px-2.5 py-1 rounded-lg bg-[#39D98A]/10 hover:bg-[#39D98A]/20 text-[#39D98A] border border-[#39D98A]/30 text-xs font-medium transition-all flex items-center gap-1 shadow-sm"
+              className="px-2.5 py-1 rounded-lg bg-[#35D07F]/10 hover:bg-[#35D07F]/20 text-[#35D07F] border border-[#35D07F]/30 text-xs font-medium transition-all flex items-center gap-1 shadow-sm"
               title="Acknowledge this incident"
             >
               <Check className="w-3 h-3" />
@@ -164,7 +165,7 @@ export default function AlertCard({
             </button>
           )}
 
-          <span className="text-xs font-medium text-slate-400 hover:text-[#20D5C5] transition-colors flex items-center gap-0.5">
+          <span className="text-xs font-medium text-slate-400 hover:text-[#26E5E5] transition-colors flex items-center gap-0.5">
             Inspect <ChevronRight className="w-3.5 h-3.5" />
           </span>
         </div>

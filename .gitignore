@@ -18,6 +18,8 @@ htmlcov/
 node_modules/
 frontend/dist/
 frontend/.vite/
+# Copied detector UMD bundles (restored via npm postinstall)
+frontend/public/vendor/
 *.tsbuildinfo
 npm-debug.log*
 
