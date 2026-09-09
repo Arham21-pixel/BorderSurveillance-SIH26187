@@ -22,6 +22,7 @@ class PipelineResult:
     risk_result: object
     context: dict
     track_uuid: str
+    emit: bool = True
 
 
 class IntelligencePipeline:
@@ -73,44 +74,81 @@ class IntelligencePipeline:
 
         restricted_violation = any(evt.event_type == "restricted_zone_entry" for evt in zone_events)
         unusual = detect_unusual_trajectory(direction=direction, expected_directions=detection.attributes.get("expected_directions"))
+        present_zones = self.zone_engine.state.track_zone_presence.get(track_key, set())
+        restricted_ids = {
+            str(z["id"]) for z in zones if str(z.get("zone_type", "")).upper() == "RESTRICTED"
+        }
+        in_restricted = bool(present_zones & restricted_ids) or restricted_violation
+        camera_has_group = bool(groups)
 
-        event_type = "movement_observed"
-        reasons: list[str] = []
-        if restricted_violation:
-            event_type = "restricted_zone_entry"
-            reasons.append("Restricted zone entry")
-        elif loitering:
-            event_type = "loitering"
-            reasons.append("Loitering threshold exceeded")
-        elif group_detected:
-            event_type = "group_movement"
-            reasons.append("Grouped movement detected")
-        elif unusual:
-            event_type = "unusual_trajectory"
-            reasons.append("Unusual movement direction")
+        is_animal = detection.object_class.lower() in (
+            "animal", "bird", "cat", "dog", "horse", "cow", "sheep",
+            "elephant", "bear", "zebra", "giraffe",
+        ) or bool(detection.attributes.get("is_animal"))
 
-        dedupe_key = f"{track_key}:{event_type}"
-        repeated = not self.event_engine.should_emit(dedupe_key, detection.timestamp, settings.event_dedupe_seconds)
+        zone_key = f"{track_key}:restricted_zone_entry"
+        loiter_key = f"{track_key}:loitering"
+        animal_key = f"{track_key}:animal_detected"
+        group_key = f"{detection.camera_id}:group_movement"
+        unusual_key = f"{track_key}:unusual_trajectory"
 
-        # Toward-boundary: flagged by zone engine or explicitly passed via attributes
+        if is_animal:
+            self.event_engine.sync_episode(zone_key, False)
+            self.event_engine.sync_episode(loiter_key, False)
+            self.event_engine.sync_episode(unusual_key, False)
+            emit = self.event_engine.sync_episode(animal_key, True)
+            event_type = "animal_detected"
+            reasons = ["Animal / non-human class"]
+        else:
+            self.event_engine.sync_episode(animal_key, False)
+            group_emit = self.event_engine.sync_episode(group_key, camera_has_group)
+            if in_restricted:
+                self.event_engine.sync_episode(loiter_key, False)
+                self.event_engine.sync_episode(unusual_key, False)
+                emit = self.event_engine.sync_episode(zone_key, True)
+                event_type = "restricted_zone_entry"
+                reasons = ["Restricted zone entry"]
+            elif camera_has_group:
+                self.event_engine.sync_episode(zone_key, False)
+                self.event_engine.sync_episode(loiter_key, False)
+                emit = group_emit
+                event_type = "group_movement"
+                reasons = ["Grouped movement detected"]
+            elif loitering:
+                self.event_engine.sync_episode(zone_key, False)
+                self.event_engine.sync_episode(unusual_key, False)
+                emit = self.event_engine.sync_episode(loiter_key, True)
+                event_type = "loitering"
+                reasons = ["Loitering threshold exceeded"]
+            elif unusual:
+                self.event_engine.sync_episode(zone_key, False)
+                self.event_engine.sync_episode(loiter_key, False)
+                emit = self.event_engine.sync_episode(unusual_key, True)
+                event_type = "unusual_trajectory"
+                reasons = ["Unusual movement direction"]
+            else:
+                self.event_engine.sync_episode(zone_key, False)
+                self.event_engine.sync_episode(loiter_key, False)
+                self.event_engine.sync_episode(unusual_key, False)
+                event_type = "movement_observed"
+                emit = False
+                reasons = []
+
+        repeated = not emit and event_type != "movement_observed"
+
         toward_boundary = any(
             evt.event_type in ("boundary_crossing", "toward_boundary")
             for evt in zone_events
             if not isinstance(evt, dict)
         ) or bool(detection.attributes.get("toward_boundary"))
 
-        # Animal / benign-object context  (PRD: -40 contributor)
-        is_animal = detection.object_class.lower() in (
-            "animal", "bird", "cat", "dog", "horse", "cow", "sheep",
-        ) or bool(detection.attributes.get("is_animal"))
-
-        # Normal trajectory: no anomalies flagged at all
         normal_trajectory_ok = (
-            not restricted_violation
+            not in_restricted
             and not loitering
             and not toward_boundary
-            and not group_detected
+            and not camera_has_group
             and not unusual
+            and not is_animal
         )
 
         risk_context = RiskContext(
@@ -119,15 +157,15 @@ class IntelligencePipeline:
             object_class=detection.object_class,
             detection_confidence=detection.confidence,
             zone_type=(zone_events[0].zone_type if zone_events else None),
-            restricted_zone_violation=restricted_violation,
+            restricted_zone_violation=in_restricted and not is_animal,
             direction=direction,
-            toward_boundary=toward_boundary,
-            normal_trajectory=normal_trajectory_ok,
+            toward_boundary=toward_boundary and not is_animal,
+            normal_trajectory=normal_trajectory_ok or is_animal,
             dwell_time=dwell_time,
-            loitering=loitering,
-            group_movement=group_detected,
+            loitering=loitering and not is_animal,
+            group_movement=camera_has_group and not is_animal,
             is_animal=is_animal,
-            night_time=self._is_night(detection.timestamp) or bool(detection.attributes.get("night")),
+            night_time=(self._is_night(detection.timestamp) or bool(detection.attributes.get("night"))) and not is_animal,
             repeated_event=repeated,
         )
         zone_event_payload = []
@@ -164,4 +202,5 @@ class IntelligencePipeline:
             risk_result=built.risk_result,
             context=built.context,
             track_uuid=track_uuid,
+            emit=emit,
         )

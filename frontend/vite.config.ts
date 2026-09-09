@@ -1,5 +1,37 @@
+import { appendFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+
+const FRONTEND_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DEBUG_LOG = path.resolve(FRONTEND_DIR, "..", "debug-9f5899.log");
+
+function debugLogSink(): Plugin {
+  return {
+    name: "netra-debug-log-sink",
+    configureServer(server) {
+      server.middlewares.use("/__debug_log", (req, res, next) => {
+        if (req.method !== "POST") {
+          next();
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on("data", (c) => chunks.push(Buffer.from(c)));
+        req.on("end", () => {
+          try {
+            const line = Buffer.concat(chunks).toString("utf8").trim();
+            if (line) appendFileSync(DEBUG_LOG, `${line}\n`, "utf8");
+          } catch {
+            /* ignore */
+          }
+          res.statusCode = 204;
+          res.end();
+        });
+      });
+    },
+  };
+}
 
 const TF_STUB = `
 const tf = globalThis.tf;
@@ -72,7 +104,7 @@ function tensorflowStubs(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tensorflowStubs()],
+  plugins: [react(), tensorflowStubs(), debugLogSink()],
   optimizeDeps: {
     exclude: ["@tensorflow/tfjs", "@tensorflow-models/coco-ssd"],
   },
@@ -84,6 +116,7 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:8000",
       "/health": "http://localhost:8000",
+      "/evidence-files": "http://localhost:8000",
       "/ws": { target: "ws://localhost:8000", ws: true },
     },
   },

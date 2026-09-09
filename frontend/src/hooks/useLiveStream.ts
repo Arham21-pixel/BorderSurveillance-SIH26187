@@ -13,10 +13,11 @@ export type ConnectionStatus =
 interface UseLiveStreamOptions {
   preferredMode?: StreamMode;
   autoReconnect?: boolean;
+  enabled?: boolean;
 }
 
 export function useLiveStream(camera: Camera, options: UseLiveStreamOptions = {}) {
-  const { preferredMode = "auto" } = options;
+  const { preferredMode = "auto", enabled = true } = options;
 
   const [streamMode, setStreamMode] = useState<StreamMode>(preferredMode);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("idle");
@@ -205,13 +206,17 @@ export function useLiveStream(camera: Camera, options: UseLiveStreamOptions = {}
     }
   }, [camera, streamMode, cleanupConnections, connectWebRTC, connectHLS]);
 
-  // Trigger stream on camera or mode change
   useEffect(() => {
+    if (!enabled) {
+      cleanupConnections();
+      setConnectionStatus("fallback_mock");
+      return;
+    }
     startStream();
     return () => {
       cleanupConnections();
     };
-  }, [camera.id, camera.status, streamMode, startStream, cleanupConnections]);
+  }, [enabled, camera.id, streamMode, startStream, cleanupConnections]);
 
   const retryConnection = () => {
     setConnectionAttempts((prev) => prev + 1);

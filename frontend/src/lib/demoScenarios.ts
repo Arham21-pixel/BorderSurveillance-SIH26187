@@ -9,7 +9,7 @@ export const DEMO_CAMERA_FLEET: Camera[] = [
   {
     id: "CAM-01",
     name: "Gate Cam 01",
-    source: "loitering.mp4",
+    source: "CAM-01",
     sector: "Entry Gate",
     status: "online",
     latitude: 27.8142,
@@ -20,7 +20,7 @@ export const DEMO_CAMERA_FLEET: Camera[] = [
   {
     id: "CAM-02",
     name: "Fence Cam 02",
-    source: "border-crossing.mp4",
+    source: "CAM-02",
     sector: "Restricted Fence",
     status: "online",
     latitude: 27.8246,
@@ -31,7 +31,7 @@ export const DEMO_CAMERA_FLEET: Camera[] = [
   {
     id: "CAM-03",
     name: "Approach Cam 03",
-    source: "group-movement.mp4",
+    source: "CAM-03",
     sector: "Approach Path",
     status: "online",
     latitude: 27.8058,
@@ -42,7 +42,7 @@ export const DEMO_CAMERA_FLEET: Camera[] = [
   {
     id: "CAM-04",
     name: "Wildlife Cam 04",
-    source: "animal.mp4",
+    source: "CAM-04",
     sector: "Perimeter scrub",
     status: "online",
     latitude: 27.8094,
@@ -53,7 +53,7 @@ export const DEMO_CAMERA_FLEET: Camera[] = [
   {
     id: "CAM-05",
     name: "Night Cam 05",
-    source: "night.mp4",
+    source: "CAM-05",
     sector: "Low-light post",
     status: "online",
     latitude: 27.8212,
@@ -319,37 +319,7 @@ const CUES: Record<DemoScenario, Cue[]> = {
       },
     },
   ],
-  night: [
-    {
-      id: "night-1",
-      at: 0.38,
-      alert: {
-        camera_id: "CAM-05",
-        severity: "SUSPICIOUS",
-        title: "Night / low-light activity",
-        description: "Motion under low illumination. False-color assist applied.",
-        risk_score: 0.34,
-        reason: "+10 Night-time / low-light context",
-        event_type: "night_activity",
-        track_id: 41,
-        zone: "Low-light post",
-        trajectory: "Activity under low illumination.",
-        evidence_path: "demo://night/snapshot",
-        object_class: "person",
-        night: true,
-        risk_breakdown: [{ signal: "Night-time / low-light", delta: 10 }],
-      },
-      event: {
-        camera_id: "CAM-05",
-        track_id: 41,
-        kind: "night_activity",
-        description: "Low-light activity on Night Cam 05.",
-        risk_score: 0.34,
-        zone: "Low-light post",
-        evidence_path: "demo://night/snapshot",
-      },
-    },
-  ],
+  night: [],
 };
 
 export function cuesTriggered(scenario: DemoScenario, prevU: number, nextU: number, cameraId: string): Cue[] {

@@ -1,11 +1,12 @@
 import type { Detection } from "../types/detection";
 
+const lumScratch = typeof document !== "undefined" ? document.createElement("canvas") : null;
+
 export function frameLuminance(video: HTMLVideoElement): number {
-  if (!video.videoWidth || video.readyState < 2) return 0.5;
-  const c = document.createElement("canvas");
-  c.width = 64;
-  c.height = 36;
-  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!video.videoWidth || video.readyState < 2 || !lumScratch) return 0.5;
+  lumScratch.width = 64;
+  lumScratch.height = 36;
+  const ctx = lumScratch.getContext("2d", { willReadFrequently: true });
   if (!ctx) return 0.5;
   ctx.drawImage(video, 0, 0, 64, 36);
   const data = ctx.getImageData(0, 0, 64, 36).data;

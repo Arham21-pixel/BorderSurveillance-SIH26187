@@ -177,12 +177,8 @@ body,
 }
 
 .leaflet-dark-tiles .leaflet-tile,
-.leaflet-sat-tiles .leaflet-tile {
+.leaflet-osm-tiles .leaflet-tile {
   filter: none;
-}
-
-.leaflet-sat-tiles .leaflet-tile-pane .leaflet-layer:first-child .leaflet-tile {
-  filter: brightness(0.78) saturate(1.05) contrast(1.08);
 }
 
 .cam-map-label {
@@ -196,8 +192,9 @@ body,
   box-shadow: none !important;
 }
 
-.cam-map-label::before {
-  display: none !important;
+.cam-map-label-incident {
+  border-color: rgba(255, 146, 46, 0.45) !important;
+  color: #ff922e !important;
 }
 
 .leaflet-container {

@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 
 export default function AlertDetails() {
-  const { alertId } = useParams<{ alertId: string }>();
+  const { alertId: rawAlertId } = useParams<{ alertId: string }>();
+  const alertId = rawAlertId ? decodeURIComponent(rawAlertId) : undefined;
   const navigate = useNavigate();
   const alerts = useAlerts();
 

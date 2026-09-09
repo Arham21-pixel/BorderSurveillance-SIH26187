@@ -92,6 +92,23 @@ def write_clip(
         writer.write(frame)
 
     writer.release()
+    # #region agent log
+    try:
+        import json, time
+        size = path.stat().st_size if path.exists() else 0
+        with open(r"c:\Users\arham\OneDrive\Documents\SIH-2026\debug-9f5899.log", "a", encoding="utf-8") as _f:
+            _f.write(json.dumps({
+                "sessionId": "9f5899",
+                "runId": "pre-fix",
+                "hypothesisId": "H3",
+                "location": "clip.py:write_clip",
+                "message": "Wrote evidence clip",
+                "data": {"path": str(path), "frames": len(frames), "fps": fps, "fourcc": "mp4v", "bytes": size, "wh": [int(w), int(h)]},
+                "timestamp": int(time.time() * 1000),
+            }) + "\n")
+    except Exception:
+        pass
+    # #endregion
     return str(path.resolve())
 
 

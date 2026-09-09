@@ -4,7 +4,7 @@ import type { EventItem } from "../types/event";
 import { SCENARIO_META, type DemoScenario } from "./demoScenarios";
 import {
   bboxStraddlesFence,
-  isMostlyVertical,
+  lineSide,
   pointCrossedFence,
   resolveFence,
   type FenceLine,
@@ -12,8 +12,28 @@ import {
 
 export type CueKind = DemoScenario | "night";
 
+const LOITER_MS = 30_000;
+const GROUP_MIN = 3;
+const GROUP_HOLD_MS = 900;
+
+export function episodeKey(cameraId: string, kind: string, trackId?: number | string | null) {
+  const normalized =
+    kind === "border-crossing" || kind === "restricted_zone_entry"
+      ? "restricted_zone_entry"
+      : kind === "group-movement" || kind === "group_movement" || kind === "group"
+        ? "group_movement"
+        : kind === "animal" || kind === "animal_movement" || kind === "animal_detected"
+          ? "animal"
+          : kind === "night" || kind === "night_activity"
+            ? "night_activity"
+            : kind;
+  if (normalized === "group_movement") return `${cameraId}:group_movement`;
+  return `${cameraId}:${normalized}:${trackId ?? "na"}`;
+}
+
 export type BehaviorCue = {
   id: string;
+  key: string;
   kind: CueKind;
   alert: Omit<Alert, "id" | "event_id" | "timestamp" | "status">;
   event: Omit<EventItem, "id" | "timestamp">;
@@ -35,6 +55,8 @@ type Track = {
   confidence: number;
   lastT: number;
   samples: Sample[];
+  stillSince: number | null;
+  enteredSide: number | null;
 };
 
 export type AnalyzerFrame = {
@@ -43,6 +65,7 @@ export type AnalyzerFrame = {
   threat: DemoScenario | null;
   inZone: boolean;
   night: boolean;
+  activeKeys: string[];
 };
 
 function iou(a: Detection["bbox"], b: Detection["bbox"]) {
@@ -119,7 +142,7 @@ function makeCue(
   extra: string,
 ): BehaviorCue {
   const meta = SCENARIO_META[kind];
-  const payloads: Record<DemoScenario, Omit<BehaviorCue, "id" | "kind">> = {
+  const payloads: Record<DemoScenario, Omit<BehaviorCue, "id" | "kind" | "key">> = {
     loitering: {
       alert: {
         camera_id: cameraId,
@@ -252,45 +275,14 @@ function makeCue(
       },
     },
   };
-  return { id: kind, kind, ...payloads[kind] };
-}
-
-function makeNightCue(cameraId: string, trackId: number): BehaviorCue {
-  return {
-    id: "night",
-    kind: "night",
-    alert: {
-      camera_id: cameraId,
-      severity: "SUSPICIOUS",
-      title: "Night / low-light activity",
-      description: `Motion in a low-luminance scene (track ${trackId}). Night-time context applied.`,
-      risk_score: 0.34,
-      reason: "+10 Night-time / low-light context",
-      event_type: "night_activity",
-      track_id: trackId,
-      zone: "Low-light sector",
-      trajectory: "Activity under low illumination.",
-      evidence_path: `live://${cameraId}/night`,
-      object_class: "person",
-      night: true,
-      risk_breakdown: [{ signal: "Night-time / low-light", delta: 10 }],
-    },
-    event: {
-      camera_id: cameraId,
-      track_id: trackId,
-      kind: "night_activity",
-      description: `Low-light activity on track ${trackId}.`,
-      risk_score: 0.34,
-      zone: "Low-light sector",
-      evidence_path: `live://${cameraId}/night`,
-    },
-  };
+  const key = episodeKey(cameraId, kind, kind === "group-movement" ? null : trackId);
+  return { id: kind, key, kind, ...payloads[kind] };
 }
 
 export class CameraAnalyzer {
   private tracks: Track[] = [];
   private nextId = 1;
-  private lastFire = new Map<CueKind, number>();
+  private open = new Set<string>();
   private groupSince: number | null = null;
   private cameraId: string;
   private fence: FenceLine = resolveFence(null);
@@ -302,7 +294,7 @@ export class CameraAnalyzer {
   reset() {
     this.tracks = [];
     this.nextId = 1;
-    this.lastFire.clear();
+    this.open.clear();
     this.groupSince = null;
   }
 
@@ -313,17 +305,22 @@ export class CameraAnalyzer {
   }
 
   update(raw: Detection[], now: number, scene?: { night?: boolean; fence?: FenceLine | null }): AnalyzerFrame {
-    if (scene && "fence" in scene) this.fence = resolveFence(scene.fence);
+    let fence: FenceLine | null = this.fence;
+    if (scene && "fence" in scene) {
+      fence = scene.fence ? resolveFence(scene.fence) : null;
+      if (fence) this.fence = fence;
+    }
     this.matchTracks(raw, now);
     this.tracks = this.tracks.filter((tr) => now - tr.lastT < 2800);
 
     const cues: BehaviorCue[] = [];
     const persons = this.tracks.filter((t) => t.label === "person");
     const animals = this.tracks.filter((t) => t.label === "animal");
-    const fence = this.fence;
-    const anyoneInZone = this.tracks.some((t) => t.label === "person" && bboxStraddlesFence(t.bbox, fence));
+    const anyoneInZone = fence
+      ? this.tracks.some((t) => t.label === "person" && bboxStraddlesFence(t.bbox, fence))
+      : false;
 
-    if (persons.length >= 2) {
+    if (persons.length >= GROUP_MIN) {
       if (this.groupSince == null) this.groupSince = now;
     } else {
       this.groupSince = null;
@@ -336,85 +333,102 @@ export class CameraAnalyzer {
       if (isMoving(short)) movingAnimal = track;
     }
 
-    const groupReady = this.groupSince != null && now - this.groupSince >= 900;
-    const animalReady = animals.some((t) => now - t.samples[0].t >= 700);
+    const groupReady = this.groupSince != null && now - this.groupSince >= GROUP_HOLD_MS;
+    const animalTracks = animals.filter((t) => now - t.samples[0].t >= 700);
 
-    let crossingTrack: Track | null = null;
-    let loiterTrack: Track | null = null;
+    const crossingTracks: Track[] = [];
+    const loiterTracks: Track[] = [];
 
     for (const track of this.tracks) {
       const window = samplesSince(track.samples, now, 5000);
       const short = samplesSince(track.samples, now, 2200);
-      if (track.label === "person") {
+      const c = center(track.bbox);
+      const side = fence ? Math.sign(lineSide(c.x, c.y, fence)) : 0;
+
+      if (track.label === "person" && fence) {
         const pathCross = crossedFence(window, fence);
-        const onFenceMoving =
-          isMostlyVertical(fence) && bboxStraddlesFence(track.bbox, fence) && isMoving(short);
-        if (pathCross || onFenceMoving) crossingTrack = track;
+        if (pathCross) {
+          track.enteredSide = side !== 0 ? side : track.enteredSide ?? 1;
+          crossingTracks.push(track);
+        } else if (track.enteredSide != null) {
+          const stillInside =
+            bboxStraddlesFence(track.bbox, fence) || (side !== 0 && side === track.enteredSide);
+          if (stillInside) crossingTracks.push(track);
+          else track.enteredSide = null;
+        }
       }
-      if (track.label === "person" && window.length && now - window[0].t >= 3200 && isStill(window)) {
-        loiterTrack = track;
+
+      if (track.label === "person") {
+        if (isMoving(short)) track.stillSince = null;
+        else if (track.stillSince == null && (isStill(short) || track.samples.length >= 8)) {
+          track.stillSince = now;
+        }
+      }
+      if (
+        track.label === "person" &&
+        track.stillSince != null &&
+        now - track.stillSince >= LOITER_MS &&
+        !crossingTracks.some((t) => t.id === track.id)
+      ) {
+        loiterTracks.push(track);
       }
     }
 
-    if (animalReady) {
-      const animal = movingAnimal ?? animals[0];
+    const desired = new Set<string>();
+
+    for (const animal of animalTracks) {
+      desired.add(episodeKey(this.cameraId, "animal", animal.id));
       this.pushCue(
         cues,
         "animal",
         animal,
-        now,
-        movingAnimal
+        movingAnimal?.id === animal.id
           ? `Animal movement tracked (ID ${animal.id}).`
           : "Animal class from on-device detector.",
       );
-      if (movingAnimal) {
+      if (movingAnimal?.id === animal.id) {
         const last = cues[cues.length - 1];
         if (last?.kind === "animal") {
           last.alert.title = "Animal movement detected";
           last.alert.event_type = "animal_movement";
+          last.alert.severity = "NORMAL";
+          last.alert.risk_score = 0.18;
           last.event.kind = "animal_movement";
           last.event.description = last.alert.description;
         }
       }
     }
+
     if (groupReady) {
+      desired.add(episodeKey(this.cameraId, "group-movement"));
       this.pushCue(
         cues,
         "group-movement",
         persons[0],
-        now,
         `${persons.length} people moving together in view.`,
       );
     }
-    if (crossingTrack) {
+
+    for (const track of crossingTracks) {
+      desired.add(episodeKey(this.cameraId, "border-crossing", track.id));
       this.pushCue(
         cues,
         "border-crossing",
-        crossingTrack,
-        now,
+        track,
         "Track crossed the monitored fence / restricted boundary.",
       );
     }
-    if (loiterTrack && !crossingTrack) {
-      this.pushCue(
-        cues,
-        "loitering",
-        loiterTrack,
-        now,
-        "Low displacement over dwell window.",
-      );
+
+    for (const track of loiterTracks) {
+      desired.add(episodeKey(this.cameraId, "loitering", track.id));
+      this.pushCue(cues, "loitering", track, "Low displacement over 30s dwell window.");
     }
-    if (night && (persons.length > 0 || animals.length > 0)) {
-      const prev = this.lastFire.get("night") ?? 0;
-      if (now - prev >= 14000) {
-        this.lastFire.set("night", now);
-        cues.push(makeNightCue(this.cameraId, (persons[0] ?? animals[0]).id));
-      }
-    }
+
+    this.open = desired;
 
     if (night) {
       for (const cue of cues) {
-        if (cue.kind === "night") continue;
+        if (cue.kind === "animal") continue;
         cue.alert.night = true;
         cue.alert.reason = `${cue.alert.reason ?? ""}, +10 Night-time / low-light`.replace(/^, /, "");
         cue.alert.risk_score = Math.min(1, (cue.alert.risk_score ?? 0) + 0.1);
@@ -425,13 +439,13 @@ export class CameraAnalyzer {
       }
     }
 
-    const threat: DemoScenario | null = crossingTrack
+    const threat: DemoScenario | null = crossingTracks.length
       ? "border-crossing"
-      : animalReady
+      : animalTracks.length
         ? "animal"
         : groupReady
           ? "group-movement"
-          : loiterTrack
+          : loiterTracks.length
             ? "loitering"
             : null;
 
@@ -442,14 +456,20 @@ export class CameraAnalyzer {
       bbox: t.bbox,
     }));
 
-    return { tracks, cues, threat, inZone: anyoneInZone, night };
+    return { tracks, cues, threat, inZone: anyoneInZone, night, activeKeys: [...desired] };
   }
 
-  private pushCue(cues: BehaviorCue[], kind: DemoScenario, track: Track, now: number, extra: string) {
-    const prev = this.lastFire.get(kind) ?? 0;
-    if (now - prev < 10000) return;
-    this.lastFire.set(kind, now);
-    cues.push(makeCue(this.cameraId, kind, track.id, extra));
+  private pushCue(cues: BehaviorCue[], kind: DemoScenario, track: Track, extra: string) {
+    const key = episodeKey(this.cameraId, kind, kind === "group-movement" ? null : track.id);
+    if (this.open.has(key)) return;
+    this.open.add(key);
+    const cue = makeCue(this.cameraId, kind, track.id, extra);
+    cue.key = key;
+    if (kind === "animal") {
+      cue.alert.severity = "NORMAL";
+      cue.alert.risk_score = Math.min(cue.alert.risk_score ?? 0.18, 0.22);
+    }
+    cues.push(cue);
   }
 
   private matchTracks(raw: Detection[], now: number) {
@@ -470,7 +490,7 @@ export class CameraAnalyzer {
           best = track;
         }
       }
-  if (best) {
+      if (best) {
         used.add(best.id);
         this.touch(best, det, now);
       } else {
@@ -481,6 +501,8 @@ export class CameraAnalyzer {
           confidence: det.confidence,
           lastT: now,
           samples: [],
+          stillSince: null,
+          enteredSide: null,
         };
         this.touch(track, det, now);
         this.tracks.push(track);

@@ -50,6 +50,20 @@ class IngestService:
             }
         )
 
+        if not pipeline_result.emit:
+            risk = pipeline_result.risk_result
+            return PipelineItemResult(
+                event_id=pipeline_result.event_id,
+                camera_id=payload.camera_id,
+                track_id=payload.track_id,
+                event_type=pipeline_result.event_type,
+                risk_score=float(getattr(risk, "score", 0) or 0),
+                severity=getattr(risk, "severity", "NORMAL") or "NORMAL",
+                reasons=list(getattr(risk, "reasons", None) or []),
+                alert_created=False,
+                context=pipeline_result.context,
+            )
+
         event_row = self.repo.create_event(
             {
                 "camera_id": str(payload.camera_id),
@@ -72,7 +86,11 @@ class IngestService:
         )
 
         # PRD-001 / TRD-001 v0.2: alerts are raised at SUSPICIOUS+ (score ≥ 30)
-        alert_created = pipeline_result.risk_result.score >= 30
+        # Animal episodes are logged as events only — never a critical/suspicious alert.
+        alert_created = (
+            pipeline_result.risk_result.score >= 30
+            and pipeline_result.event_type != "animal_detected"
+        )
         if alert_created:
             alert_row = self.repo.create_alert(
                 {

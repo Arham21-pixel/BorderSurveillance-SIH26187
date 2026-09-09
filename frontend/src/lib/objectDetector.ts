@@ -137,7 +137,7 @@ export async function loadObjectDetector(): Promise<CocoModel> {
     if (!window.cocoSsd) await loadFirstAvailable(COCO_SOURCES);
     const cocoSsd = window.cocoSsd;
     if (!cocoSsd) throw new Error("COCO-SSD did not initialize");
-    const model = await cocoSsd.load({ base: "mobilenet_v2" }).catch(() => cocoSsd.load({ base: "lite_mobilenet_v2" }));
+    const model = await cocoSsd.load({ base: "lite_mobilenet_v2" }).catch(() => cocoSsd.load({ base: "mobilenet_v2" }));
     status = "ready";
     return model;
   })().catch((err: unknown) => {
@@ -153,12 +153,31 @@ function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
+const detectScratch = typeof document !== "undefined" ? document.createElement("canvas") : null;
+
 export async function detectFromVideo(video: HTMLVideoElement): Promise<Detection[]> {
   if (!video.videoWidth || !video.videoHeight || video.readyState < 2) return [];
   const model = await loadObjectDetector();
-  const preds = await model.detect(video, 12);
   const vw = video.videoWidth;
   const vh = video.videoHeight;
+  const maxW = 320;
+  const dw = Math.min(maxW, vw);
+  const dh = Math.max(1, Math.round((vh / Math.max(vw, 1)) * dw));
+  let input: HTMLVideoElement | HTMLCanvasElement = video;
+  let iw = vw;
+  let ih = vh;
+  if (detectScratch && vw > maxW) {
+    detectScratch.width = dw;
+    detectScratch.height = dh;
+    const ctx = detectScratch.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, dw, dh);
+      input = detectScratch;
+      iw = dw;
+      ih = dh;
+    }
+  }
+  const preds = await model.detect(input, 8);
   const out: Detection[] = [];
 
   for (const pred of preds) {
@@ -169,10 +188,10 @@ export async function detectFromVideo(video: HTMLVideoElement): Promise<Detectio
     if (isAnimal && pred.score < 0.35) continue;
 
     const [x, y, w, h] = pred.bbox;
-    const x1 = clamp01(x / vw);
-    const y1 = clamp01(y / vh);
-    const x2 = clamp01((x + w) / vw);
-    const y2 = clamp01((y + h) / vh);
+    const x1 = clamp01(x / iw);
+    const y1 = clamp01(y / ih);
+    const x2 = clamp01((x + w) / iw);
+    const y2 = clamp01((y + h) / ih);
     if ((x2 - x1) * (y2 - y1) < 0.0012) continue;
 
     out.push({

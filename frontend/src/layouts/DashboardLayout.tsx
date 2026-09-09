@@ -1,13 +1,10 @@
-import { ReactNode, useState } from "react";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import { DemoSessionProvider } from "../contexts/DemoSessionContext";
 
-interface DashboardLayoutProps {
-  children?: ReactNode;
-}
-
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -43,7 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           isSidebarOpen={isSidebarOpen}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-7 max-w-[1680px] w-full mx-auto overflow-y-auto">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

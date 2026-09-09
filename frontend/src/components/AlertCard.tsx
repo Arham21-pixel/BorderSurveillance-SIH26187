@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import RiskBadge, { normalizeSeverity } from "./RiskBadge";
 import type { Alert } from "../types/alert";
 import { formatTime } from "../utils/formatters";
@@ -165,9 +166,13 @@ export default function AlertCard({
             </button>
           )}
 
-          <span className="text-xs font-medium text-slate-400 hover:text-[#26E5E5] transition-colors flex items-center gap-0.5">
+          <Link
+            to={`/alerts/${encodeURIComponent(alert.id)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-medium text-slate-400 hover:text-[#26E5E5] transition-colors flex items-center gap-0.5"
+          >
             Inspect <ChevronRight className="w-3.5 h-3.5" />
-          </span>
+          </Link>
         </div>
       </div>
     </article>

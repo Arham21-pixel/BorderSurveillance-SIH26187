@@ -26,25 +26,22 @@ export default function App() {
 
         {/* Protected Command Center Operations */}
         <Route
-          path="/*"
           element={
             <ProtectedRoute>
-              <DashboardLayout>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/cameras" element={<Cameras />} />
-                  <Route path="/alerts" element={<Alerts />} />
-                  <Route path="/alerts/:alertId" element={<AlertDetails />} />
-                  <Route path="/evidence" element={<Evidence />} />
-                  <Route path="/map" element={<MapPage />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </DashboardLayout>
+              <DashboardLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/cameras" element={<Cameras />} />
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/alerts/:alertId" element={<AlertDetails />} />
+          <Route path="/evidence" element={<Evidence />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
       </Routes>
     </AuthProvider>
   );

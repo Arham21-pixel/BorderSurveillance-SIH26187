@@ -10,9 +10,10 @@ Endpoints
 ---------
 POST /api/video/analyze
     Start a video analysis session (mp4 | rtsp | webcam).
-    For demo MP4 sources a background pipeline injection is triggered
-    so that events/alerts appear on the dashboard shortly after the
-    operator clicks START ANALYSIS.
+    Named demo MP4s run YOLO → ByteTrack → one behaviour episode.
+
+POST /api/video/analyze-file
+    Upload a clip and run the same pipeline.
 
 POST /api/video/stop
     Stop a running session.
@@ -28,13 +29,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from backend.core.dependencies import get_current_user, get_repo
-from backend.schemas.user import UserContext
+from pathlib import Path
+
+from backend.core.dependencies import get_repo
+from backend.services.clip_pipeline import publish_clip_episode, resolve_camera_id
 from backend.services.ingest_service import IngestService
 from backend.services.repository import BaseRepository
+from vision.pipeline.clip_analyze import analyze_clip_file, find_clip, infer_scenario
 
 router = APIRouter(prefix="/api/video", tags=["video"])
 
@@ -52,8 +56,12 @@ DEMO_MP4_FILES: frozenset[str] = frozenset(
         "walking.mp4",
         "loitering.mp4",
         "border crossing.mp4",
+        "border-crossing.mp4",
         "group movement.mp4",
+        "group ppl moving.mp4",
         "animal demo.mp4",
+        "animal.mp4",
+        "animal video.mp4",
     }
 )
 
@@ -83,13 +91,36 @@ class StopRequest(BaseModel):
 
 class SessionStatus(BaseModel):
     session_id: str
-    status: str             # "analyzing" | "stopped" | "error"
+    status: str             # "analyzing" | "stopped" | "error" | "complete"
     source_type: str
     source_reference: str
     camera_id: str
     started_at: str
     stopped_at: Optional[str] = None
     frames_processed: int = 0
+    error: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+
+
+def _blank_session(
+    session_id: str,
+    camera_id: str,
+    source_type: str,
+    source_reference: str,
+    started_at: str,
+) -> dict[str, Any]:
+    return {
+        "session_id": session_id,
+        "status": "analyzing",
+        "source_type": source_type,
+        "source_reference": source_reference,
+        "camera_id": camera_id,
+        "started_at": started_at,
+        "stopped_at": None,
+        "frames_processed": 0,
+        "error": None,
+        "result": None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -114,11 +145,9 @@ async def start_analysis(
     payload: AnalyzeRequest,
     background_tasks: BackgroundTasks,
     service: IngestService = Depends(_get_service),
-    _: UserContext = Depends(get_current_user),
 ) -> AnalyzeResponse:
-    """Create an analysis session and — for demo MP4 sources — fire a
-    background pipeline injection so the full
-    Detection → Behaviour → Risk → Alert → Evidence flow runs."""
+    """Create an analysis session and, for demo MP4 sources, run
+    YOLO → ByteTrack → one event / risk / alert / evidence package."""
 
     # Validate MP4 filename whitelist
     if payload.source_type == "mp4" and payload.source_reference not in DEMO_MP4_FILES:
@@ -133,29 +162,26 @@ async def start_analysis(
     session_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
 
-    _sessions[session_id] = {
-        "session_id": session_id,
-        "status": "analyzing",
-        "source_type": payload.source_type,
-        "source_reference": payload.source_reference,
-        "camera_id": payload.camera_id,
-        "started_at": now,
-        "stopped_at": None,
-        "frames_processed": 0,
-    }
+    _sessions[session_id] = _blank_session(
+        session_id, payload.camera_id, payload.source_type, payload.source_reference, now
+    )
 
-    # For demo MP4 sources kick the full AI pipeline in a background task.
-    # walking.mp4      → single detection (normal tracking)
-    # loitering.mp4    → two detections with a delay (dwell-time trigger)
-    # border crossing.mp4 → two detections with zone-crossing payload
     if payload.source_type == "mp4":
-        background_tasks.add_task(
-            _run_demo_pipeline,
-            session_id,
-            payload.camera_id,
-            payload.source_reference,
-            service,
-        )
+        clip = find_clip(payload.source_reference)
+        if clip is None:
+            _sessions[session_id]["status"] = "error"
+            _sessions[session_id]["error"] = (
+                f"Clip '{payload.source_reference}' not found. Put it in data/videos/."
+            )
+        else:
+            background_tasks.add_task(
+                _run_clip_pipeline,
+                session_id,
+                payload.camera_id,
+                str(clip),
+                payload.source_reference,
+                service,
+            )
 
     return AnalyzeResponse(
         session_id=session_id,
@@ -174,7 +200,6 @@ async def start_analysis(
 )
 async def stop_analysis(
     payload: StopRequest,
-    _: UserContext = Depends(get_current_user),
 ) -> dict:
     session = _sessions.get(payload.session_id)
     if not session:
@@ -201,7 +226,6 @@ async def stop_analysis(
 )
 async def get_session_status(
     session_id: str,
-    _: UserContext = Depends(get_current_user),
 ) -> SessionStatus:
     session = _sessions.get(session_id)
     if not session:
@@ -212,47 +236,133 @@ async def get_session_status(
     return SessionStatus(**session)
 
 
-# ---------------------------------------------------------------------------
-# Background pipeline runner
-# ---------------------------------------------------------------------------
+@router.post(
+    "/analyze-file",
+    response_model=AnalyzeResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Upload a clip and run YOLO → ByteTrack → one episode",
+)
+async def analyze_uploaded_file(
+    background_tasks: BackgroundTasks,
+    camera_id: str = Form(...),
+    file: UploadFile = File(...),
+    service: IngestService = Depends(_get_service),
+) -> AnalyzeResponse:
+    uploads = Path("data/uploads")
+    uploads.mkdir(parents=True, exist_ok=True)
+    safe_name = Path(file.filename or "clip.mp4").name
+    dest = uploads / f"{uuid.uuid4().hex}_{safe_name}"
+    dest.write_bytes(await file.read())
 
-async def _run_demo_pipeline(
+    session_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    _sessions[session_id] = _blank_session(session_id, camera_id, "mp4", safe_name, now)
+    background_tasks.add_task(
+        _run_clip_pipeline,
+        session_id,
+        camera_id,
+        str(dest),
+        safe_name,
+        service,
+    )
+    return AnalyzeResponse(
+        session_id=session_id,
+        status="started",
+        camera_id=camera_id,
+        source_type="mp4",
+        source_reference=safe_name,
+        started_at=now,
+    )
+
+
+async def _run_clip_pipeline(
     session_id: str,
-    camera_id_str: str,
-    mp4_filename: str,
+    camera_ref: str,
+    source_path: str,
+    filename: str,
     service: IngestService,
 ) -> None:
-    """Trigger demo detections through the full AI pipeline.
-
-    Behaviour depends on which demo MP4 was selected:
-    - walking.mp4        → one detection (normal movement)
-    - loitering.mp4      → two detections with 4 s gap (triggers dwell-time)
-    - border crossing.mp4 → two detections with 2 s gap (triggers zone alert)
-    """
+    """YOLO → ByteTrack → behaviour → one event / risk / alert / evidence."""
+    session = _sessions.get(session_id)
+    if not session:
+        return
     try:
-        cam_uuid = uuid.UUID(camera_id_str)
-    except ValueError:
-        # camera_id is a label like "DEMO-01" — we can't inject without a real UUID.
-        # The dashboard will still update when Aaryan's pipeline sends real frames.
-        _sessions[session_id]["status"] = "analyzing"
+        camera_uuid, camera_code = resolve_camera_id(service.repo, camera_ref)
+    except ValueError as exc:
+        session["status"] = "error"
+        session["error"] = str(exc)
         return
 
     try:
-        # First injection
-        await service.demo_inject_detection(cam_uuid)
-        _sessions[session_id]["frames_processed"] = 1
-
-        if mp4_filename in {"loitering.mp4", "border crossing.mp4"}:
-            # Second injection after a brief pause — enough to cross dwell / zone thresholds
-            delay = 4.0 if mp4_filename == "loitering.mp4" else 2.0
-            await asyncio.sleep(delay)
-
-            if _sessions[session_id]["status"] == "stopped":
-                return  # Operator stopped analysis before second frame
-
-            await service.demo_inject_detection(cam_uuid)
-            _sessions[session_id]["frames_processed"] = 2
-
-    except Exception:
-        # Don't crash the server — mark session as error
-        _sessions[session_id]["status"] = "error"
+        result = await asyncio.to_thread(
+            analyze_clip_file,
+            source_path,
+            camera_code,
+            scenario=infer_scenario(filename),
+        )
+        session["frames_processed"] = result.frames
+        if result.error:
+            session["status"] = "error"
+            session["error"] = result.error
+            # #region agent log
+            try:
+                import json, time
+                with open(r"c:\Users\arham\OneDrive\Documents\SIH-2026\debug-9f5899.log", "a", encoding="utf-8") as _f:
+                    _f.write(json.dumps({
+                        "sessionId": "9f5899",
+                        "runId": "post-fix",
+                        "hypothesisId": "H5",
+                        "location": "video.py:_run_clip_pipeline",
+                        "message": "Clip pipeline error",
+                        "data": {"error": result.error, "frames": result.frames},
+                        "timestamp": int(time.time() * 1000),
+                    }) + "\n")
+            except Exception:
+                pass
+            # #endregion
+            return
+        payload: Dict[str, Any] = {
+            "kind": result.kind,
+            "expected": result.expected,
+            "alert_created": False,
+            "event_id": None,
+            "alert_id": None,
+            "duration_s": result.duration_s,
+        }
+        if result.event is not None:
+            payload = await publish_clip_episode(
+                service,
+                camera_uuid,
+                camera_code,
+                result.event,
+                result.evidence,
+            )
+            payload["expected"] = result.expected
+            payload["duration_s"] = result.duration_s
+        session["result"] = payload
+        session["status"] = "complete"
+        # #region agent log
+        try:
+            import json, time
+            with open(r"c:\Users\arham\OneDrive\Documents\SIH-2026\debug-9f5899.log", "a", encoding="utf-8") as _f:
+                _f.write(json.dumps({
+                    "sessionId": "9f5899",
+                    "runId": "post-fix",
+                    "hypothesisId": "H5",
+                    "location": "video.py:_run_clip_pipeline",
+                    "message": "Clip pipeline complete",
+                    "data": {
+                        "kind": payload.get("kind"),
+                        "event_id": payload.get("event_id"),
+                        "alert_id": payload.get("alert_id"),
+                        "clip_url": payload.get("clip_url"),
+                        "frames": session.get("frames_processed"),
+                    },
+                    "timestamp": int(time.time() * 1000),
+                }) + "\n")
+        except Exception:
+            pass
+        # #endregion
+    except Exception as exc:
+        session["status"] = "error"
+        session["error"] = str(exc)

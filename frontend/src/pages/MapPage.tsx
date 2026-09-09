@@ -50,11 +50,9 @@ export default function MapPage() {
             Operational sector map
           </span>
           <div className="flex flex-wrap items-center gap-3 text-[10px] font-medium">
-            <LegendDot color="bg-netra-accent" label="Fence" />
-            <LegendDot color="bg-netra-critical" label="Restricted" />
-            <LegendDot color="bg-netra-suspicious" label="Patrol" />
             <LegendDot color="bg-netra-normal" label="Camera" />
-            <LegendDot color="bg-netra-high" label={`Alerts ${openAlerts.length}`} />
+            <LegendDot color="bg-netra-critical" label="Restricted Zone" />
+            <LegendDot color="bg-netra-high" label="Incident" />
           </div>
         </div>
 

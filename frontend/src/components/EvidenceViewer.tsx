@@ -2,7 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { FileSearch, ShieldCheck, Image, Video, Route } from "lucide-react";
 import type { Alert } from "../types/alert";
 
+function agentLog(payload: Record<string, unknown>) {
+  const body = JSON.stringify({ sessionId: "9f5899", timestamp: Date.now(), ...payload });
+  fetch("http://127.0.0.1:7510/ingest/295ef66e-9961-4f13-8dff-1e570b2b49ce", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "9f5899" },
+    body,
+  }).catch(() => {});
+  fetch("/__debug_log", { method: "POST", headers: { "Content-Type": "application/json" }, body }).catch(() => {});
+}
+
 type EvidenceTab = "snapshot" | "clip" | "trajectory" | "metadata";
+
+const EMPTY_POINTS: { x: number; y: number }[] = [];
 
 export function hasAlertMedia(alert?: Alert | null) {
   return Boolean(alert?.snapshot_url || alert?.clip_url || (alert?.trajectory_points && alert.trajectory_points.length > 1));
@@ -25,33 +37,108 @@ export default function EvidenceViewer({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const snapshot = alert?.snapshot_url ?? (path?.startsWith("data:") ? path : null);
   const clipUrl = alert?.clip_url ?? null;
-  const points = alert?.trajectory_points ?? [];
+  const points = alert?.trajectory_points ?? EMPTY_POINTS;
 
   useEffect(() => {
     if (tab) setInnerTab(tab);
   }, [tab]);
 
   useEffect(() => {
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    // #region agent log
+    agentLog({
+      runId: "post-fix",
+      hypothesisId: "H1-H5",
+      location: "EvidenceViewer.tsx:media-summary",
+      message: "Evidence media payload",
+      data: {
+        active,
+        alertId: alert?.id ?? null,
+        clipUrlKind: clipUrl ? (clipUrl.startsWith("blob:") ? "blob" : clipUrl.startsWith("data:") ? "data" : clipUrl.startsWith("/") ? "path" : "other") : "none",
+        clipUrlSample: clipUrl ? clipUrl.slice(0, 80) : null,
+        snapshotKind: snapshot ? (snapshot.startsWith("data:") ? "data" : snapshot.startsWith("blob:") ? "blob" : snapshot.startsWith("/") ? "path" : "other") : "none",
+        pointCount: points.length,
+        xMin: xs.length ? Math.min(...xs) : null,
+        xMax: xs.length ? Math.max(...xs) : null,
+        yMin: ys.length ? Math.min(...ys) : null,
+        yMax: ys.length ? Math.max(...ys) : null,
+        clipStart: alert?.clip_start ?? null,
+        clipEnd: alert?.clip_end ?? null,
+        firstPoint: points[0] ?? null,
+      },
+    });
+    // #endregion
+  }, [active, alert?.id, clipUrl, snapshot, points, alert?.clip_start, alert?.clip_end]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video || !clipUrl || active !== "clip") return;
-    const start = alert?.clip_start ?? 0;
-    const end = alert?.clip_end ?? start + 6;
+    const start = Number(alert?.clip_start);
+    const end = Number(alert?.clip_end);
+    const srcIsFile = clipUrl.startsWith("blob:") || clipUrl.startsWith("data:");
+    const clampWindow =
+      !srcIsFile && Number.isFinite(start) && Number.isFinite(end) && end > start + 0.2;
     const onMeta = () => {
+      // #region agent log
+      agentLog({
+        runId: "post-fix",
+        hypothesisId: "H4",
+        location: "EvidenceViewer.tsx:video-meta",
+        message: "Clip loadedmetadata",
+        data: {
+          duration: video.duration,
+          videoWidth: video.videoWidth,
+          readyState: video.readyState,
+          start: clampWindow ? start : null,
+          end: clampWindow ? end : null,
+          clampWindow,
+          srcIsFile,
+          srcKind: clipUrl.startsWith("blob:") ? "blob" : clipUrl.startsWith("/") ? "path" : "other",
+        },
+      });
+      // #endregion
+      if (!clampWindow) {
+        video.play().catch(() => undefined);
+        return;
+      }
+      const onSeeked = () => {
+        video.removeEventListener("seeked", onSeeked);
+        video.play().catch(() => undefined);
+      };
+      video.addEventListener("seeked", onSeeked);
       video.currentTime = start;
-      video.play().catch(() => undefined);
     };
     const onTime = () => {
-      if (video.currentTime >= end) {
+      if (clampWindow && video.currentTime >= end) {
         video.pause();
         video.currentTime = start;
       }
     };
+    const onErr = () => {
+      // #region agent log
+      agentLog({
+        runId: "post-fix",
+        hypothesisId: "H3",
+        location: "EvidenceViewer.tsx:video-error",
+        message: "Clip element error",
+        data: {
+          code: video.error?.code ?? null,
+          mediaMessage: video.error?.message ?? null,
+          srcKind: clipUrl.startsWith("blob:") ? "blob" : clipUrl.startsWith("/") ? "path" : "other",
+          srcSample: clipUrl.slice(0, 80),
+        },
+      });
+      // #endregion
+    };
     video.addEventListener("loadedmetadata", onMeta);
     video.addEventListener("timeupdate", onTime);
+    video.addEventListener("error", onErr);
     if (video.readyState >= 1) onMeta();
     return () => {
       video.removeEventListener("loadedmetadata", onMeta);
       video.removeEventListener("timeupdate", onTime);
+      video.removeEventListener("error", onErr);
     };
   }, [clipUrl, alert?.clip_start, alert?.clip_end, active]);
 
@@ -64,17 +151,41 @@ export default function EvidenceViewer({
     if (!ctx) return;
     ctx.fillStyle = "#070B12";
     ctx.fillRect(0, 0, w, h);
+    const paint = (frameW?: number, frameH?: number) => {
+      drawPath(ctx, w, h, points, frameW, frameH);
+    };
     if (snapshot) {
       const img = new window.Image();
       img.onload = () => {
         ctx.globalAlpha = 0.45;
         ctx.drawImage(img, 0, 0, w, h);
         ctx.globalAlpha = 1;
-        drawPath(ctx, w, h, points);
+        paint(img.naturalWidth, img.naturalHeight);
+        // #region agent log
+        agentLog({
+          runId: "post-fix",
+          hypothesisId: "H2",
+          location: "EvidenceViewer.tsx:traj-snapshot-ok",
+          message: "Trajectory snapshot loaded",
+          data: { pointCount: points.length, snapshotKind: snapshot.startsWith("data:") ? "data" : "url", frame: [img.naturalWidth, img.naturalHeight] },
+        });
+        // #endregion
+      };
+      img.onerror = () => {
+        paint();
+        // #region agent log
+        agentLog({
+          runId: "post-fix",
+          hypothesisId: "H2",
+          location: "EvidenceViewer.tsx:traj-snapshot-fail",
+          message: "Trajectory snapshot failed; drew path only",
+          data: { pointCount: points.length, snapshotSample: snapshot.slice(0, 80) },
+        });
+        // #endregion
       };
       img.src = snapshot;
     } else {
-      drawPath(ctx, w, h, points);
+      paint();
     }
   }, [active, snapshot, points]);
 
@@ -153,7 +264,11 @@ export default function EvidenceViewer({
               playsInline
             />
             <p className="text-[11px] font-mono text-slate-400">
-              Window {formatSec(alert?.clip_start)} – {formatSec(alert?.clip_end)}
+              {clipUrl.startsWith("blob:") || clipUrl.startsWith("data:")
+                ? "Assigned camera clip"
+                : alert?.clip_start != null && alert?.clip_end != null
+                  ? `Window ${formatSec(alert.clip_start)} – ${formatSec(alert.clip_end)}`
+                  : "Full captured clip"}
               {alert?.night ? " · night / low-light" : ""}
               {alert?.object_class ? ` · ${alert.object_class}` : ""}
             </p>
@@ -207,6 +322,8 @@ function drawPath(
   w: number,
   h: number,
   points: { x: number; y: number }[],
+  frameW?: number,
+  frameH?: number,
 ) {
   ctx.strokeStyle = "rgba(34, 49, 57, 0.9)";
   ctx.lineWidth = 1;
@@ -228,28 +345,35 @@ function drawPath(
     ctx.fillText("Not enough track samples yet.", 16, 28);
     return;
   }
+  const maxX = Math.max(...points.map((p) => p.x), 0);
+  const maxY = Math.max(...points.map((p) => p.y), 0);
+  const pixel = maxX > 1.5 || maxY > 1.5;
+  const sx = pixel ? Math.max(frameW && frameW > 1 ? frameW : maxX, 1) : 1;
+  const sy = pixel ? Math.max(frameH && frameH > 1 ? frameH : maxY, 1) : 1;
+  const xy = (p: { x: number; y: number }) =>
+    pixel ? { x: (p.x / sx) * w, y: (p.y / sy) * h } : { x: p.x * w, y: p.y * h };
+
   ctx.beginPath();
   ctx.strokeStyle = "#26E5E5";
   ctx.lineWidth = 2.5;
   points.forEach((p, i) => {
-    const x = p.x * w;
-    const y = p.y * h;
+    const { x, y } = xy(p);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
   ctx.stroke();
-  const start = points[0];
-  const end = points[points.length - 1];
+  const start = xy(points[0]);
+  const end = xy(points[points.length - 1]);
   ctx.fillStyle = "#35D07F";
   ctx.beginPath();
-  ctx.arc(start.x * w, start.y * h, 5, 0, Math.PI * 2);
+  ctx.arc(start.x, start.y, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#FF4D67";
   ctx.beginPath();
-  ctx.arc(end.x * w, end.y * h, 6, 0, Math.PI * 2);
+  ctx.arc(end.x, end.y, 6, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#F4F8FA";
   ctx.font = "11px JetBrains Mono, monospace";
-  ctx.fillText("START", start.x * w + 8, start.y * h - 8);
-  ctx.fillText("NOW", end.x * w + 8, end.y * h - 8);
+  ctx.fillText("START", start.x + 8, start.y - 8);
+  ctx.fillText("NOW", end.x + 8, end.y - 8);
 }

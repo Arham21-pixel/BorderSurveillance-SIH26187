@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchEvents } from "../services/api";
+import { useEvents } from "../hooks/useEvents";
 import type { EventItem } from "../types/event";
 import RiskBadge from "../components/RiskBadge";
 import { formatTime } from "../utils/formatters";
@@ -29,8 +29,7 @@ function severityFromScore(score: number): "CRITICAL" | "HIGH" | "SUSPICIOUS" | 
 
 export default function Events() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { events, isLoading } = useEvents(80);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,19 +45,6 @@ export default function Events() {
 
   // Selected row for detail drawer
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
-
-  useEffect(() => {
-    fetchEvents(50)
-      .then((data) => {
-        setEvents(data || []);
-      })
-      .catch(() => {
-        setEvents([]);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
 
   // Filter and sort events
   const processedEvents = useMemo(() => {

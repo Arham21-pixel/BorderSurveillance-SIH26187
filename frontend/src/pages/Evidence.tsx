@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAlerts } from "../hooks/useAlerts";
 import EvidenceViewer from "../components/EvidenceViewer";
 import RiskBadge, { normalizeSeverity } from "../components/RiskBadge";
@@ -15,6 +15,41 @@ export default function Evidence() {
   const [tab, setTab] = useState<ViewerTab>("snapshot");
 
   const selectedAlert = alerts.find((a) => a.id === selectedAlertId) ?? alerts[0];
+
+  useEffect(() => {
+    const pts = selectedAlert?.trajectory_points ?? [];
+    const body = JSON.stringify({
+      sessionId: "9f5899",
+      runId: "pre-fix",
+      hypothesisId: "H5",
+      location: "Evidence.tsx:selected",
+      message: "Evidence page selection",
+      data: {
+        tab,
+        alertCount: alerts.length,
+        alertId: selectedAlert?.id ?? null,
+        clipUrlKind: selectedAlert?.clip_url
+          ? selectedAlert.clip_url.startsWith("blob:")
+            ? "blob"
+            : selectedAlert.clip_url.startsWith("/")
+              ? "path"
+              : "other"
+          : "none",
+        clipUrlSample: selectedAlert?.clip_url?.slice(0, 80) ?? null,
+        pointCount: pts.length,
+        firstPoint: pts[0] ?? null,
+        clipStart: selectedAlert?.clip_start ?? null,
+        clipEnd: selectedAlert?.clip_end ?? null,
+      },
+      timestamp: Date.now(),
+    });
+    fetch("http://127.0.0.1:7510/ingest/295ef66e-9961-4f13-8dff-1e570b2b49ce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "9f5899" },
+      body,
+    }).catch(() => {});
+    fetch("/__debug_log", { method: "POST", headers: { "Content-Type": "application/json" }, body }).catch(() => {});
+  }, [alerts.length, selectedAlert?.id, tab, selectedAlert?.clip_url, selectedAlert?.clip_start, selectedAlert?.clip_end, selectedAlert?.trajectory_points]);
   const risk = selectedAlert
     ? selectedAlert.risk_score != null && selectedAlert.risk_score <= 1
       ? Math.round(selectedAlert.risk_score * 100)

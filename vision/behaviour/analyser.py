@@ -179,6 +179,12 @@ class BehaviourAnalyser:
         self.night_start, self.night_end = night_hours
         self.fps = fps
         self._tracks: dict[str, _TrackState] = {}  # track_id → state
+        self._open: set[str] = set()  # episode keys currently open
+
+    def _episode_key(self, kind: str, track_id: str | None, camera_id: str) -> str:
+        if kind == "group":
+            return f"{camera_id}:group"
+        return f"{camera_id}:{kind}:{track_id or 'na'}"
 
     # ── Primary interface ─────────────────────────────────────────────────────
 
@@ -213,6 +219,11 @@ class BehaviourAnalyser:
         now_epoch = _iso_to_epoch(timestamp)
         is_night = self._is_night(now_epoch)
         events: list[BehaviourEvent] = []
+        desired: set[str] = set()
+        animal_classes = {
+            "animal", "bird", "cat", "dog", "horse", "cow", "sheep",
+            "elephant", "bear", "zebra", "giraffe",
+        }
 
         # ── Update track states ───────────────────────────────────────────────
         active_ids: set[str] = set()
@@ -235,30 +246,68 @@ class BehaviourAnalyser:
         for tid, state in self._tracks.items():
             cx, cy = state.centroid_history[-1] if state.centroid_history else (0.0, 0.0)
 
-            # Collect persons for group check
             if state.object_class == "person":
                 person_centroids.append((cx, cy))
                 person_track_ids.append(tid)
 
-            # 1. Zone intrusion
+            obj_class = (state.object_class or "").lower()
+            if obj_class in animal_classes:
+                key = self._episode_key("animal", tid, state.camera_id)
+                desired.add(key)
+                if key not in self._open:
+                    events.append(
+                        BehaviourEvent(
+                            track_id=state.track_id,
+                            camera_id=state.camera_id,
+                            timestamp=timestamp,
+                            kind="animal",
+                            description=f"Animal class tracked ({state.object_class})",
+                            confidence=0.7,
+                            features={
+                                "zone_restricted": False,
+                                "dwell_seconds": state.dwell_seconds,
+                                "group_size": 1,
+                                "night": is_night,
+                                "vehicle_near_fence": False,
+                                "is_animal": True,
+                            },
+                            object_class=state.object_class,
+                            bounding_box=state.last_bounding_box,
+                            trajectory=list(state.centroid_history),
+                        )
+                    )
+                continue
+
             zone_event = self._check_zone_intrusion(state, timestamp, is_night)
             if zone_event:
-                events.append(zone_event)
-                continue  # zone intrusion is highest priority, skip other checks
+                key = self._episode_key("zone_intrusion", tid, state.camera_id)
+                desired.add(key)
+                if key not in self._open:
+                    events.append(zone_event)
+                continue
 
-            # 2. Loitering
             loiter_event = self._check_loitering(state, timestamp, is_night)
             if loiter_event:
-                events.append(loiter_event)
+                key = self._episode_key("loitering", tid, state.camera_id)
+                desired.add(key)
+                if key not in self._open:
+                    events.append(loiter_event)
 
-            # 3. Fast movement
             speed_event = self._check_fast_movement(state, timestamp)
             if speed_event:
-                events.append(speed_event)
+                key = self._episode_key("fast_movement", tid, state.camera_id)
+                desired.add(key)
+                if key not in self._open:
+                    events.append(speed_event)
 
-        # 4. Group gathering (cross-track)
         group_events = self._check_group(person_centroids, person_track_ids, camera_id, timestamp, is_night)
-        events.extend(group_events)
+        if group_events:
+            key = self._episode_key("group", None, camera_id)
+            desired.add(key)
+            if key not in self._open:
+                events.append(group_events[0])
+
+        self._open = desired
 
         logger.debug(
             "camera=%s ts=%s tracked=%d events=%d",
@@ -277,8 +326,10 @@ class BehaviourAnalyser:
             to_remove = [tid for tid, s in self._tracks.items() if s.camera_id == camera_id]
             for tid in to_remove:
                 del self._tracks[tid]
+            self._open = {k for k in self._open if not k.startswith(f"{camera_id}:")}
         else:
             self._tracks.clear()
+            self._open.clear()
         logger.info("BehaviourAnalyser reset (camera=%s).", camera_id or "ALL")
 
     # ── Internal helpers ──────────────────────────────────────────────────────

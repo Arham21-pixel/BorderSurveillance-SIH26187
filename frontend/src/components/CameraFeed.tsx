@@ -131,7 +131,7 @@ export default function CameraFeed({
     streamLatency,
     retryConnection,
     isLiveFeed,
-  } = useLiveStream(activeCamera, { preferredMode: "auto" });
+  } = useLiveStream(activeCamera, { preferredMode: "auto", enabled: false });
 
   // ---------------------------------------------------------------------------
   // Attach webcam stream to <video> when provided
@@ -192,6 +192,8 @@ export default function CameraFeed({
   // Top-left HUD label
   const liveThreat = session?.runtime[activeCamera.id]?.threat ?? null;
   const liveNight = Boolean(session?.runtime[activeCamera.id]?.night);
+  const boundaryMode = scenario === "border-crossing" || liveThreat === "border-crossing";
+  const effectiveShowZone = showZone && boundaryMode;
   const feedLabel = (() => {
     if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
     if (activeCamera.videoUrl && liveThreat) {
@@ -199,7 +201,7 @@ export default function CameraFeed({
       return `DETECTED · ${SCENARIO_META[liveThreat].label.toUpperCase()}${night}`;
     }
     if (activeCamera.videoUrl) return liveNight ? "LIVE · NIGHT / LOW-LIGHT" : "LIVE · AUTO-CLASSIFYING";
-    return SCENARIO_META[scenario].label.toUpperCase();
+    return "ONLINE";
   })();
 
   // ---------------------------------------------------------------------------
@@ -347,15 +349,20 @@ export default function CameraFeed({
               <button
                 type="button"
                 onClick={() => setShowZone(!showZone)}
+                disabled={!boundaryMode}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
-                  showZone
+                  effectiveShowZone
                     ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title="Show or drag the fence line. Crossing this line raises a boundary alert."
+                title={
+                  boundaryMode
+                    ? "Show or drag the virtual fence line. Crossing this line raises a boundary alert."
+                    : "Fence is used for boundary-crossing mode only."
+                }
               >
                 <Layers className="w-3 h-3" />
-                <span className="hidden sm:inline">Fence</span>
+                <span className="hidden sm:inline">Virtual Fence</span>
               </button>
 
               {/* Toggle Fullscreen */}
@@ -476,7 +483,7 @@ export default function CameraFeed({
             videoUrl={activeCamera.videoUrl}
             analyzing={isAnalyzing}
             showBoxes={showDetections}
-            showZone={showZone}
+            showZone={effectiveShowZone}
             fence={session?.runtime[activeCamera.id]?.fence ?? null}
             onPlaceFence={(line) => session?.setFenceLine(activeCamera.id, line)}
             detections={session?.runtime[activeCamera.id]?.detections}
@@ -503,19 +510,50 @@ export default function CameraFeed({
                 ? liveThreat
                   ? `Auto-classified · ${SCENARIO_META[liveThreat].label}`
                   : "On-device detector · classifying threat"
-                : `Standby · ${SCENARIO_META[scenario].label}`
+                : "Awaiting assigned feed"
               : "Analysis paused"}
           </div>
         </div>
 
-        {/* ── HUD: Top Right — timestamp ── */}
+        {/* ── HUD: Top Right — timestamp + playback vs analysis ── */}
         <div className="absolute top-3 right-4 font-mono text-right pointer-events-none z-20">
           <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#070B12]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
             <Clock className="w-3 h-3 text-[#26E5E5]" />
             <span>{currentTime}</span>
           </div>
-          <div className="text-[10px] text-slate-400 px-2.5 pt-0.5">
-            {showLiveHLS || showWebcam || showDemoFeed ? "FEED: ACTIVE" : "FEED STATUS: STANDBY"}
+          <div className="mt-1.5 bg-[#070B12]/80 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-white/[0.08] text-left space-y-1.5 min-w-[118px]">
+            <div>
+              <div className="text-[8px] uppercase tracking-[0.14em] text-slate-500">Video</div>
+              <div
+                className={`flex items-center gap-1.5 text-[10px] font-semibold ${
+                  showLiveHLS || showWebcam || showDemoFeed ? "text-white" : "text-slate-500"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    showLiveHLS || showWebcam || showDemoFeed
+                      ? "bg-[#26E5E5] animate-pulse"
+                      : "bg-slate-600"
+                  }`}
+                />
+                {showLiveHLS || showWebcam || showDemoFeed ? "PLAYING" : "STANDBY"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[8px] uppercase tracking-[0.14em] text-slate-500">AI Analysis</div>
+              <div
+                className={`flex items-center gap-1.5 text-[10px] font-semibold ${
+                  isAnalyzing ? "text-[#35D07F]" : "text-slate-500"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isAnalyzing ? "bg-[#35D07F] animate-pulse" : "bg-slate-600"
+                  }`}
+                />
+                {isAnalyzing ? "ACTIVE" : "IDLE"}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -564,14 +602,14 @@ export default function CameraFeed({
               !
             </div>
             <div className="text-sm font-semibold text-white">FEED CARRIER SIGNAL LOST</div>
-            <div className="text-slate-400">Camera source ({activeCamera.source}) is currently offline or unreachable.</div>
+            <div className="text-slate-400">This camera is currently offline or unreachable.</div>
             <div className="text-[10px] text-slate-500">CHECK CAMERA SOURCE OR RETRY CONNECTION</div>
           </div>
         )}
 
         {/* ── Bottom-right source tag ── */}
         <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#070B12]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
-          <span>SRC: {activeCamera.source}</span>
+          <span>{activeCamera.id}</span>
           {!showLiveHLS && !showWebcam && isOnline && (
             <button
               onClick={retryConnection}

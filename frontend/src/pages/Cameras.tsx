@@ -57,7 +57,7 @@ export default function Cameras() {
           </div>
           <h1 className="n-page-title">Live Cameras</h1>
           <p className="n-page-sub">
-            Assign a clip to any of the five cameras. The detector classifies loitering, boundary crossing, group walking, animal, or night/low-light from that video. Evidence and analytics are stored per clip.
+            Assign a clip to any of the five cameras. The backend runs YOLO and tracking, then writes at most one event, one risk score, one alert, and one evidence package. Overlay boxes stay on-device.
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export default function Cameras() {
                         ? session.runtime[cam.id]?.threat
                           ? `Detected: ${SCENARIO_META[scenario].label}`
                           : "Auto-detecting threat type…"
-                        : SCENARIO_META[scenario].description}
+                        : cam.sector}
                     </div>
                     <div className="flex items-center justify-between mt-2 text-[10px] font-mono text-netra-muted2">
                       <span className="flex items-center gap-1">
@@ -210,8 +210,8 @@ export default function Cameras() {
                     {cam.videoUrl
                       ? session.runtime[cam.id]?.threat
                         ? SCENARIO_META[session.runtime[cam.id].threat!].label
-                        : "Auto"
-                      : SCENARIO_META[scenario].label}
+                        : "Live"
+                      : "Online"}
                   </span>
                 </div>
                 <div className="relative aspect-video bg-netra-bg">
@@ -222,6 +222,8 @@ export default function Cameras() {
                     videoUrl={cam.videoUrl}
                     analyzing={session.analyzing}
                     compact
+                    showBoxes={false}
+                    showZone={false}
                     detections={session.runtime[cam.id]?.detections}
                     threat={session.runtime[cam.id]?.threat ?? null}
                   />

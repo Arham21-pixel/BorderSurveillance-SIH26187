@@ -6,10 +6,8 @@ import {
   Popup,
   Polygon,
   Polyline,
-  Circle,
   Tooltip,
   ScaleControl,
-  CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import type { Camera } from "../types/camera";
@@ -47,11 +45,18 @@ const PATROL: [number, number][] = [
   [27.8058, 70.1794],
 ];
 
-const POSTS: { name: string; pos: [number, number] }[] = [
-  { name: "Watch post Alpha", pos: [27.8156, 70.1840] },
-  { name: "Fence post B-4", pos: [27.8258, 70.1712] },
-  { name: "Approach marker", pos: [27.8064, 70.1806] },
+const RESTRICTED_CENTER: [number, number] = [
+  RESTRICTED.reduce((s, p) => s + p[0], 0) / RESTRICTED.length,
+  RESTRICTED.reduce((s, p) => s + p[1], 0) / RESTRICTED.length,
 ];
+
+function severityRank(severity: string) {
+  const n = normalizeSeverity(severity);
+  if (n === "CRITICAL") return 4;
+  if (n === "HIGH") return 3;
+  if (n === "SUSPICIOUS") return 2;
+  return 1;
+}
 
 const CAMERA_FOV: Record<string, { heading: number; range: number; spread: number }> = {
   "CAM-01": { heading: 280, range: 920, spread: 44 },
@@ -82,6 +87,15 @@ function fovWedge(lat: number, lon: number, heading: number, range: number, spre
     pts.push(dest(lat, lon, range, b));
   }
   return pts;
+}
+
+function labelAnchor() {
+  return L.divIcon({
+    className: "tactical-camera-pin",
+    html: `<div style="width:1px;height:1px"></div>`,
+    iconSize: [1, 1],
+    iconAnchor: [0, 0],
+  });
 }
 
 function createCameraIcon(status: string, isActive: boolean, alertLevel?: string) {
@@ -132,10 +146,17 @@ export default function CameraMap({
     return map;
   }, [alerts]);
 
+  const incidentCamera = useMemo(() => {
+    const ranked = [...alerts].sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+    const alert = ranked[0];
+    if (!alert) return null;
+    return cameras.find((c) => c.id === alert.camera_id && c.latitude != null && c.longitude != null) ?? null;
+  }, [alerts, cameras]);
+
   return (
     <div
       style={{ height, width: "100%", position: "relative" }}
-      className="rounded-xl overflow-hidden border border-white/[0.08] leaflet-sat-tiles"
+      className="rounded-xl overflow-hidden border border-white/[0.08] leaflet-osm-tiles"
     >
       <MapContainer
         key={`${center[0].toFixed(4)}-${center[1].toFixed(4)}`}
@@ -145,50 +166,39 @@ export default function CameraMap({
         style={{ height: "100%", width: "100%", background: "#070B12" }}
       >
         <TileLayer
-          attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          maxZoom={19}
-        />
-        <TileLayer
-          attribution="&copy; CARTO"
-          url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
 
         <Polygon
           positions={FENCE}
           pathOptions={{ color: "#26E5E5", weight: 2.2, dashArray: "10 7", fillColor: "#26E5E5", fillOpacity: 0.06 }}
-        >
-          <Tooltip sticky>IB fence corridor</Tooltip>
-        </Polygon>
+        />
 
         <Polygon
           positions={RESTRICTED}
           pathOptions={{ color: "#FF4D67", weight: 2.4, fillColor: "#FF4D67", fillOpacity: 0.22 }}
-        >
-          <Tooltip sticky>Restricted Zone A</Tooltip>
-        </Polygon>
+        />
+        <Marker position={RESTRICTED_CENTER} icon={labelAnchor()} interactive={false}>
+          <Tooltip permanent direction="center" className="cam-map-label">
+            Restricted Zone
+          </Tooltip>
+        </Marker>
 
         <Polyline positions={PATROL} pathOptions={{ color: "#F2C94C", weight: 2, dashArray: "5 8", opacity: 0.9 }} />
 
-        <Circle
-          center={DEFAULT_MAP_CENTER}
-          radius={420}
-          pathOptions={{ color: "#26E5E5", fillColor: "#26E5E5", fillOpacity: 0.03, weight: 1 }}
-        />
-
-        {POSTS.map((post) => (
-          <CircleMarker
-            key={post.name}
-            center={post.pos}
-            radius={5}
-            pathOptions={{ color: "#F4F8FA", fillColor: "#101A24", fillOpacity: 0.9, weight: 1.5 }}
+        {incidentCamera && (
+          <Marker
+            position={[incidentCamera.latitude as number, incidentCamera.longitude as number]}
+            icon={labelAnchor()}
+            interactive={false}
           >
-            <Tooltip permanent direction="right" offset={[8, 0]} className="cam-map-label">
-              {post.name}
+            <Tooltip permanent direction="bottom" offset={[0, 20]} className="cam-map-label cam-map-label-incident">
+              Incident
             </Tooltip>
-          </CircleMarker>
-        ))}
+          </Marker>
+        )}
 
         {cameras
           .filter((c) => c.latitude != null && c.longitude != null)
@@ -279,10 +289,9 @@ export default function CameraMap({
         {SECTOR_NAME} <span className="text-[#26E5E5] font-semibold">{SECTOR_REGION}</span>
       </div>
       <div className="absolute bottom-2.5 left-2.5 z-[400] bg-[#070B12]/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/[0.08] text-[10px] font-mono text-slate-400 flex gap-3">
-        <span className="text-[#26E5E5]">Fence</span>
-        <span className="text-[#FF4D67]">Restricted</span>
-        <span className="text-[#F2C94C]">Patrol</span>
-        <span className="text-white/70">FOV</span>
+        <span className="text-netra-normal">Camera</span>
+        <span className="text-[#FF4D67]">Restricted Zone</span>
+        <span className="text-[#FF922E]">Incident</span>
       </div>
     </div>
   );

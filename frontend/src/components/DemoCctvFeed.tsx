@@ -39,6 +39,7 @@ export type TickMeta = {
   vision: boolean;
   threat: DemoScenario | null;
   cues: BehaviorCue[];
+  activeKeys?: string[];
   night?: boolean;
   luminance?: number;
   snapshot?: string | null;
@@ -394,13 +395,13 @@ export default function DemoCctvFeed({
   const scenarioRef = useRef(scenario);
   scenarioRef.current = scenario;
   const lastEmit = useRef(0);
-  const lastProgress = useRef(0);
   const visionDets = useRef<Detection[]>([]);
   const threatRef = useRef<DemoScenario | null>(null);
   const nightRef = useRef(false);
   const lastCanvasSnap = useRef<string | null>(null);
   const lastCanvasSnapAt = useRef(0);
   const pendingCues = useRef<BehaviorCue[]>([]);
+  const lastActiveKeys = useRef<string[]>([]);
   const busy = useRef(false);
   const lastDetectAt = useRef(0);
   const overlaySize = useRef({ w: 0, h: 0 });
@@ -434,6 +435,21 @@ export default function DemoCctvFeed({
   };
 
   useEffect(() => {
+    if (!compact) return;
+    const video = videoRef.current;
+    if (!video) return;
+    const freeze = () => {
+      video.pause();
+      if (video.currentTime < 0.05 && Number.isFinite(video.duration) && video.duration > 0) {
+        video.currentTime = Math.min(0.08, video.duration * 0.02);
+      }
+    };
+    video.addEventListener("loadeddata", freeze);
+    freeze();
+    return () => video.removeEventListener("loadeddata", freeze);
+  }, [compact, videoUrl]);
+
+  useEffect(() => {
     if (compact || !videoUrl) return;
     const owner = `${cameraId}:main`;
     const claimed = claimVision(cameraId, owner);
@@ -452,6 +468,7 @@ export default function DemoCctvFeed({
     let raf = 0;
     const LOOP_MS = 16000;
     let lastPaint = 0;
+    let lastOverlay = 0;
 
     const tick = (now: number) => {
       const canvas = canvasRef.current;
@@ -462,18 +479,14 @@ export default function DemoCctvFeed({
         const claimed = isVisionOwner(cameraId, ownerKeyRef.current);
         if (video.duration && Number.isFinite(video.duration) && video.duration > 0) {
           progress = video.currentTime / video.duration;
-          if (claimed && progress + 0.08 < lastProgress.current) {
-            resetCameraAnalyzer(cameraId);
-            pendingCues.current = [];
-          }
-          lastProgress.current = progress;
         }
 
         const parent = overlayRef.current?.parentElement;
         const w = parent?.clientWidth || 640;
         const h = parent?.clientHeight || 360;
         const overlay = overlayRef.current;
-        if (overlay) {
+        if (overlay && now - lastOverlay > 66) {
+          lastOverlay = now;
           if (overlaySize.current.w !== w || overlaySize.current.h !== h) {
             overlay.width = w;
             overlay.height = h;
@@ -483,6 +496,9 @@ export default function DemoCctvFeed({
           if (ctx) {
             thermalTick.current += 1;
             const dets = claimed ? visionDets.current : detectionsRef.current ?? [];
+            const activeFence = showZoneRef.current
+              ? resolveFence(previewFence.current ?? fenceRef.current)
+              : undefined;
             drawVideoOverlay(ctx, overlay.width, overlay.height, video, dets, {
               showBoxes: showBoxesRef.current,
               showZone: showZoneRef.current,
@@ -490,8 +506,8 @@ export default function DemoCctvFeed({
               analyzing: analyzingRef.current,
               night: nightRef.current,
               cameraId: claimed ? cameraId : undefined,
-              thermal: nightRef.current && thermalTick.current % 2 === 0,
-              fence: previewFence.current ?? resolveFence(fenceRef.current),
+              thermal: nightRef.current && thermalTick.current % 10 === 0,
+              fence: activeFence,
             });
           }
         }
@@ -500,8 +516,9 @@ export default function DemoCctvFeed({
           claimed &&
           analyzingRef.current &&
           !busy.current &&
-          visionStateRef.current !== "error" &&
-          now - lastDetectAt.current > 320
+          visionStateRef.current === "ready" &&
+          !video.paused &&
+          now - lastDetectAt.current > 800
         ) {
           busy.current = true;
           lastDetectAt.current = now;
@@ -510,12 +527,16 @@ export default function DemoCctvFeed({
               const lum = frameLuminance(video);
               const night = isNightScene(lum);
               nightRef.current = night;
+              const activeFence = showZoneRef.current
+                ? resolveFence(previewFence.current ?? fenceRef.current)
+                : null;
               const frame = analyzeCamera(cameraId, raw, performance.now(), {
                 night,
-                fence: resolveFence(fenceRef.current),
+                fence: activeFence,
               });
               visionDets.current = frame.tracks;
               threatRef.current = frame.threat;
+              lastActiveKeys.current = frame.activeKeys;
               if (frame.cues.length) {
                 const snap = captureSnapshot(video, frame.tracks);
                 const t = video.currentTime || 0;
@@ -550,6 +571,7 @@ export default function DemoCctvFeed({
               vision: true,
               threat: threatRef.current,
               cues,
+              activeKeys: lastActiveKeys.current,
               night: nightRef.current,
             });
           }
@@ -623,9 +645,9 @@ export default function DemoCctvFeed({
             ref={videoRef}
             src={videoUrl}
             className="absolute inset-0 w-full h-full object-contain bg-[#070B12]"
-            autoPlay
+            autoPlay={!compact}
             muted
-            loop
+            loop={!compact}
             playsInline
             controls={false}
             disablePictureInPicture

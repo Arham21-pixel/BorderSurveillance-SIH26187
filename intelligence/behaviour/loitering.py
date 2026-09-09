@@ -21,6 +21,8 @@ def evaluate_loitering(
     threshold_seconds: int,
     dedupe_seconds: int,
 ) -> tuple[bool, float]:
+    """Return (is_loitering, dwell). Episode emit-once is handled by EventEngine."""
+    del dedupe_seconds
     if track_key not in state.first_seen_at:
         state.first_seen_at[track_key] = current_timestamp
         return False, 0.0
@@ -29,9 +31,4 @@ def evaluate_loitering(
     if dwell < threshold_seconds:
         return False, dwell
 
-    last_emitted = state.last_emitted_at.get(track_key)
-    if last_emitted is not None and (current_timestamp - last_emitted).total_seconds() < dedupe_seconds:
-        return False, dwell
-
-    state.last_emitted_at[track_key] = current_timestamp
     return True, dwell

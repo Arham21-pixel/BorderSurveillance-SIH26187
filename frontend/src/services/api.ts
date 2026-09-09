@@ -55,21 +55,23 @@ export async function fetchAlerts(filters?: { severity?: string; status?: string
     const status = String(r.status ?? "OPEN").toLowerCase();
     const createdAt = String(r.created_at ?? r.timestamp ?? new Date().toISOString());
     const extra = (r.extra ?? {}) as Record<string, unknown>;
+    const score = typeof r.risk_score === "number" ? r.risk_score : 0;
     return {
       id: String(r.id ?? ""),
-      camera_id: String(r.camera_id ?? ""),
+      camera_id: String(extra.camera_code ?? r.camera_id ?? ""),
       event_id: String(r.event_id ?? ""),
       severity,
-      title: String(r.title ?? extra.event_type ?? "Alert"),
-      description: String(r.description ?? (reasons.length ? reasons.join(", ") : "Review required")),
+      title: String(extra.title ?? r.title ?? extra.event_type ?? "Alert"),
+      description: String(extra.description ?? r.description ?? (reasons.length ? reasons.join(", ") : "Review required")),
       status,
       evidence_path: (r.evidence_path as string | null | undefined) ?? null,
       timestamp: createdAt,
       created_at: createdAt,
-      // DRD-required fields
-      risk_score: typeof r.risk_score === "number" ? r.risk_score : 0,
+      risk_score: score > 1 ? score / 100 : score,
       reasons,
       extra,
+      snapshot_url: typeof extra.snapshot_url === "string" ? extra.snapshot_url : undefined,
+      clip_url: typeof extra.clip_url === "string" ? extra.clip_url : undefined,
     };
   });
 }
@@ -85,15 +87,23 @@ export const ackAlert = async (id: string): Promise<Alert> => {
 export async function fetchEvents(limit: number = 50): Promise<EventItem[]> {
   const raw = await get<EventItem[] | Paginated<Record<string, unknown>>>(`/api/events?limit=${limit}&offset=0`);
   const rows = unwrapList(raw as EventItem[] | Paginated<Record<string, unknown>>);
-  return rows.map((row) => ({
-    id: String((row as { id?: unknown }).id ?? ""),
-    camera_id: String((row as { camera_id?: unknown }).camera_id ?? ""),
-    track_id: ((row as { track_id?: unknown }).track_id as number | string | null | undefined) ?? null,
-    kind: String((row as { kind?: unknown; event_type?: unknown }).kind ?? (row as { event_type?: unknown }).event_type ?? "event"),
-    description: String((row as { description?: unknown }).description ?? ""),
-    risk_score: Number((row as { risk_score?: unknown; event_data?: { risk_score?: unknown } }).risk_score ?? (row as { event_data?: { risk_score?: unknown } }).event_data?.risk_score ?? 0),
-    timestamp: String((row as { timestamp?: unknown }).timestamp ?? new Date().toISOString()),
-  }));
+  return rows.map((row) => {
+    const rawScore = Number(
+      (row as { risk_score?: unknown; event_data?: { risk_score?: unknown } }).risk_score
+        ?? (row as { event_data?: { risk_score?: unknown } }).event_data?.risk_score
+        ?? 0,
+    );
+    const data = ((row as { event_data?: Record<string, unknown> }).event_data ?? {}) as Record<string, unknown>;
+    return {
+      id: String((row as { id?: unknown }).id ?? ""),
+      camera_id: String(data.camera_code ?? (row as { camera_id?: unknown }).camera_id ?? ""),
+      track_id: ((row as { track_id?: unknown }).track_id as number | string | null | undefined) ?? null,
+      kind: String((row as { kind?: unknown; event_type?: unknown }).kind ?? (row as { event_type?: unknown }).event_type ?? "event"),
+      description: String(data.description ?? (row as { description?: unknown }).description ?? ""),
+      risk_score: rawScore > 1 ? rawScore / 100 : rawScore,
+      timestamp: String((row as { timestamp?: unknown }).timestamp ?? new Date().toISOString()),
+    };
+  });
 }
 
 export const fetchDetections = (cameraId?: string) => {
@@ -124,13 +134,48 @@ export interface StartAnalysisResponse {
 
 export interface SessionStatusResponse {
   session_id: string;
-  status: string; // "analyzing" | "stopped" | "error"
+  status: string; // "analyzing" | "stopped" | "error" | "complete"
   source_type: string;
   source_reference: string;
   camera_id: string;
   started_at: string;
   stopped_at: string | null;
   frames_processed: number;
+  error?: string | null;
+  result?: {
+    kind?: string;
+    expected?: string;
+    alert_created?: boolean;
+    event_id?: string | null;
+    alert_id?: string | null;
+    event_type?: string;
+    title?: string;
+    description?: string;
+    object_class?: string;
+    severity?: string;
+    risk_score?: number;
+    reasons?: string[];
+    snapshot_url?: string | null;
+    clip_url?: string | null;
+    camera_code?: string;
+    duration_s?: number;
+    trajectory?: Array<[number, number] | { x: number; y: number }>;
+  } | null;
+}
+
+export async function analyzeClipFile(
+  cameraId: string,
+  file: File,
+): Promise<StartAnalysisResponse> {
+  const body = new FormData();
+  body.append("camera_id", cameraId);
+  body.append("file", file);
+  const res = await fetch(`${API}/api/video/analyze-file`, { method: "POST", body });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? `analyzeClipFile failed: ${res.status}`);
+  }
+  return res.json();
 }
 
 export async function startVideoAnalysis(
