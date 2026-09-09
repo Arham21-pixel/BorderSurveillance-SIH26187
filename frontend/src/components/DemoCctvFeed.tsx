@@ -303,7 +303,7 @@ function drawVideoOverlay(
   ctx.moveTo(ox + dw - tick, oy + dh); ctx.lineTo(ox + dw, oy + dh); ctx.lineTo(ox + dw, oy + dh - tick);
   ctx.stroke();
 
-  if (opts.showZone && opts.analyzing) {
+  if (opts.showZone) {
     const lines = opts.fences?.length ? opts.fences : opts.fence ? [opts.fence] : [DEFAULT_FENCE];
     lines.forEach((fence, i) => {
       const x1 = ox + fence.ax * dw;
@@ -326,7 +326,7 @@ function drawVideoOverlay(
     });
   }
 
-  if (opts.showBoxes && opts.analyzing) {
+  if (opts.showBoxes) {
     if (opts.cameraId) {
       for (const det of dets) {
         const trail = getTrackPath(opts.cameraId, det.track_id);
@@ -532,7 +532,7 @@ export default function DemoCctvFeed({
               : [];
             drawVideoOverlay(ctx, cssW, cssH, video, dets, {
               showBoxes: showBoxesRef.current,
-              showZone: watchFence,
+              showZone: showZoneRef.current,
               threat: claimed ? threatRef.current : threatPropRef.current,
               analyzing: analyzingRef.current,
               night: nightRef.current,
@@ -551,11 +551,19 @@ export default function DemoCctvFeed({
           video.readyState >= 2 &&
           (!video.paused || !threatRef.current) &&
           now - lastDetectAt.current >
-            (monitorFenceRef.current || showZoneRef.current ? 240 : 480)
+            (monitorFenceRef.current ||
+            showZoneRef.current ||
+            scenarioRef.current === "group-movement"
+              ? 240
+              : 420)
         ) {
           busy.current = true;
           lastDetectAt.current = now;
-          detectFromVideo(video)
+          const crowd = scenarioRef.current === "group-movement";
+          detectFromVideo(video, {
+            maxWidth: crowd ? 512 : 416,
+            maxBoxes: crowd ? 20 : 12,
+          })
             .then((raw) => {
               const clipIsNight = scenarioRef.current === "night";
               const lum = clipIsNight ? frameLuminance(video) : 1;

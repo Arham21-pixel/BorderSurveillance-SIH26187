@@ -15,8 +15,9 @@ import {
 export type CueKind = DemoScenario | "night";
 
 const LOITER_MS = 30_000;
-const GROUP_MIN = 3;
-const GROUP_HOLD_MS = 900;
+const GROUP_MIN = 2;
+const GROUP_HOLD_MS = 500;
+const GROUP_MISS_MS = 800;
 
 export function episodeKey(cameraId: string, kind: string, trackId?: number | string | null) {
   const normalized =
@@ -312,9 +313,10 @@ export class CameraAnalyzer {
   private nextId = 1;
   private open = new Set<string>();
   private groupSince: number | null = null;
+  private groupMissSince: number | null = null;
   private lastBoundaryAt = 0;
   private cameraId: string;
-  private fence: FenceLine = resolveFence(null);
+  private fence: FenceLine | null = null;
 
   constructor(cameraId: string) {
     this.cameraId = cameraId;
@@ -325,7 +327,9 @@ export class CameraAnalyzer {
     this.nextId = 1;
     this.open.clear();
     this.groupSince = null;
+    this.groupMissSince = null;
     this.lastBoundaryAt = 0;
+    this.fence = null;
   }
 
   pathFor(trackId: number): { x: number; y: number }[] {
@@ -336,12 +340,12 @@ export class CameraAnalyzer {
 
   update(raw: Detection[], now: number, scene?: { night?: boolean; fence?: FenceLine | null; fences?: FenceLine[] }): AnalyzerFrame {
     let fenceList: FenceLine[] = this.fence ? [this.fence] : [];
-    if (scene && "fences" in scene && scene.fences && scene.fences.length) {
-      fenceList = scene.fences.map((f) => resolveFence(f));
-      this.fence = fenceList[0];
+    if (scene && "fences" in scene) {
+      fenceList = (scene.fences ?? []).map((f) => resolveFence(f));
+      this.fence = fenceList[0] ?? null;
     } else if (scene && "fence" in scene) {
       const fence = scene.fence ? resolveFence(scene.fence) : null;
-      if (fence) this.fence = fence;
+      this.fence = fence;
       fenceList = fence ? [fence] : [];
     }
     this.matchTracks(raw, now);
@@ -356,8 +360,13 @@ export class CameraAnalyzer {
 
     if (persons.length >= GROUP_MIN) {
       if (this.groupSince == null) this.groupSince = now;
-    } else {
-      this.groupSince = null;
+      this.groupMissSince = null;
+    } else if (this.groupSince != null) {
+      if (this.groupMissSince == null) this.groupMissSince = now;
+      if (now - this.groupMissSince >= GROUP_MISS_MS) {
+        this.groupSince = null;
+        this.groupMissSince = null;
+      }
     }
 
     const night = Boolean(scene?.night);
@@ -486,15 +495,18 @@ export class CameraAnalyzer {
       }
     }
 
-    const threat: DemoScenario | null = crossingTracks.length || boundaryHeld
-      ? "border-crossing"
-      : animalTracks.length
-        ? "animal"
+    const threat: DemoScenario | null =
+      fenceList.length && (crossingTracks.length || boundaryHeld)
+        ? "border-crossing"
         : groupReady
           ? "group-movement"
-          : loiterTracks.length
-            ? "loitering"
-            : null;
+          : crossingTracks.length || boundaryHeld
+            ? "border-crossing"
+            : animalTracks.length
+              ? "animal"
+              : loiterTracks.length
+                ? "loitering"
+                : null;
 
     const tracks: Detection[] = this.tracks.map((t) => ({
       track_id: t.id,
@@ -524,42 +536,58 @@ export class CameraAnalyzer {
   }
 
   private matchTracks(raw: Detection[], now: number) {
-    const used = new Set<number>();
-    for (const det of raw) {
-      let best: Track | null = null;
-      let bestScore = 0.22;
+    const usedTrack = new Set<number>();
+    const usedDet = new Set<number>();
+    const pairs: { di: number; track: Track; score: number }[] = [];
+    raw.forEach((det, di) => {
       for (const track of this.tracks) {
-        if (used.has(track.id)) continue;
         if (track.label !== det.label) continue;
-        const score = iou(track.bbox, det.bbox);
+        const overlap = iou(track.bbox, det.bbox);
+        if (overlap > 0.18) pairs.push({ di, track, score: overlap });
+      }
+    });
+    pairs.sort((a, b) => b.score - a.score);
+    for (const pair of pairs) {
+      if (usedTrack.has(pair.track.id) || usedDet.has(pair.di)) continue;
+      usedTrack.add(pair.track.id);
+      usedDet.add(pair.di);
+      this.touch(pair.track, raw[pair.di], now);
+    }
+    raw.forEach((det, di) => {
+      if (usedDet.has(di)) return;
+      let best: Track | null = null;
+      let bestDist = 0.09;
+      for (const track of this.tracks) {
+        if (usedTrack.has(track.id) || track.label !== det.label) continue;
         const c1 = center(track.bbox);
         const c2 = center(det.bbox);
-        const dist = 1 - Math.min(1, Math.hypot(c1.x - c2.x, c1.y - c2.y) / 0.25);
-        const combined = Math.max(score, dist * 0.85);
-        if (combined > bestScore) {
-          bestScore = combined;
+        const dist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+        if (dist < bestDist) {
+          bestDist = dist;
           best = track;
         }
       }
       if (best) {
-        used.add(best.id);
+        usedTrack.add(best.id);
+        usedDet.add(di);
         this.touch(best, det, now);
-      } else {
-        const track: Track = {
-          id: this.nextId++,
-          label: det.label,
-          bbox: det.bbox,
-          confidence: det.confidence,
-          lastT: now,
-          samples: [],
-          stillSince: null,
-          enteredSide: null,
-        };
-        this.touch(track, det, now);
-        this.tracks.push(track);
-        used.add(track.id);
+        return;
       }
-    }
+      const track: Track = {
+        id: this.nextId++,
+        label: det.label,
+        bbox: det.bbox,
+        confidence: det.confidence,
+        lastT: now,
+        samples: [],
+        stillSince: null,
+        enteredSide: null,
+      };
+      this.touch(track, det, now);
+      this.tracks.push(track);
+      usedTrack.add(track.id);
+      usedDet.add(di);
+    });
   }
 
   private touch(track: Track, det: Detection, now: number) {

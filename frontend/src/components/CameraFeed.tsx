@@ -100,7 +100,7 @@ export default function CameraFeed({
   const [currentTime, setCurrentTime] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDetections, setShowDetections] = useState(true);
-  const [showZone, setShowZone] = useState(true);
+  const [showZone, setShowZone] = useState(false);
   const [showStreamSettings, setShowStreamSettings] = useState(false);
 
   const activeCamera = camera ?? cameras[0] ?? {
@@ -120,6 +120,10 @@ export default function CameraFeed({
   const scenario = (activeCamera.scenario ?? "loitering") as DemoScenario;
   const isAnalyzing = session ? session.analyzing : analysisState !== "STOPPED";
   const showDemoFeed = sourceType !== "webcam" || !webcamStream;
+  const fenceCamera =
+    activeCamera.id === "CAM-02" ||
+    scenario === "border-crossing" ||
+    (activeCamera.sector ?? "").toLowerCase().includes("fence");
 
   // Stream state & integration hook (for WebRTC / HLS)
   const {
@@ -169,6 +173,10 @@ export default function CameraFeed({
     return () => document.removeEventListener("fullscreenchange", handle);
   }, []);
 
+  useEffect(() => {
+    setShowZone(fenceCamera);
+  }, [activeCamera.id, fenceCamera]);
+
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     try {
@@ -192,12 +200,6 @@ export default function CameraFeed({
   // Top-left HUD label
   const liveThreat = session?.runtime[activeCamera.id]?.threat ?? null;
   const liveNight = Boolean(session?.runtime[activeCamera.id]?.night);
-  const boundaryMode =
-    activeCamera.id === "CAM-02" ||
-    scenario === "border-crossing" ||
-    liveThreat === "border-crossing" ||
-    (activeCamera.sector ?? "").toLowerCase().includes("fence");
-  const effectiveShowZone = showZone && boundaryMode;
   const feedLabel = (() => {
     if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
     if (activeCamera.videoUrl && liveThreat) {
@@ -343,13 +345,13 @@ export default function CameraFeed({
               {/* Toggle Detections */}
               <button
                 type="button"
-                onClick={() => setShowDetections(!showDetections)}
+                onClick={() => setShowDetections((v) => !v)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   showDetections
                     ? "bg-[#26E5E5]/15 text-[#26E5E5] border border-[#26E5E5]/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title="Toggle AI Bounding Boxes"
+                title="Show or hide detection boxes and track trails"
               >
                 <Crosshair className="w-3 h-3" />
                 <span className="hidden sm:inline">Boxes</span>
@@ -358,17 +360,13 @@ export default function CameraFeed({
               {/* Toggle Zone */}
               <button
                 type="button"
-                onClick={() => setShowZone(!showZone)}
+                onClick={() => setShowZone((v) => !v)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
-                  effectiveShowZone
+                  showZone
                     ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
-                title={
-                  boundaryMode
-                    ? "Virtual fence is the crossing line. Drag on the video to match the real fence."
-                    : "Fence alerts run on Fence Cam / boundary clips."
-                }
+                title="Show or hide the virtual fence. Drag on the video to place it."
               >
                 <Layers className="w-3 h-3" />
                 <span className="hidden sm:inline">Virtual Fence</span>
@@ -492,8 +490,8 @@ export default function CameraFeed({
             videoUrl={activeCamera.videoUrl}
             analyzing={isAnalyzing}
             showBoxes={showDetections}
-            showZone={effectiveShowZone}
-            monitorFence={boundaryMode}
+            showZone={showZone}
+            monitorFence={fenceCamera}
             fence={session?.runtime[activeCamera.id]?.fence ?? null}
             onPlaceFence={(line) => session?.setFenceLine(activeCamera.id, line)}
             detections={session?.runtime[activeCamera.id]?.detections}

@@ -155,12 +155,18 @@ function clamp01(n: number) {
 
 const detectScratch = typeof document !== "undefined" ? document.createElement("canvas") : null;
 
-export async function detectFromVideo(video: HTMLVideoElement): Promise<Detection[]> {
+export type DetectOpts = {
+  maxWidth?: number;
+  maxBoxes?: number;
+};
+
+export async function detectFromVideo(video: HTMLVideoElement, opts?: DetectOpts): Promise<Detection[]> {
   if (!video.videoWidth || !video.videoHeight || video.readyState < 2) return [];
   const model = await loadObjectDetector();
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  const maxW = 320;
+  const maxW = opts?.maxWidth ?? 448;
+  const maxBoxes = opts?.maxBoxes ?? 16;
   const dw = Math.min(maxW, vw);
   const dh = Math.max(1, Math.round((vh / Math.max(vw, 1)) * dw));
   let input: HTMLVideoElement | HTMLCanvasElement = video;
@@ -177,22 +183,22 @@ export async function detectFromVideo(video: HTMLVideoElement): Promise<Detectio
       ih = dh;
     }
   }
-  const preds = await model.detect(input, 8);
+  const preds = await model.detect(input, maxBoxes);
   const out: Detection[] = [];
 
   for (const pred of preds) {
     const isPerson = pred.class === "person";
     const isAnimal = ANIMAL_LABELS.has(pred.class);
     if (!isPerson && !isAnimal) continue;
-    if (isPerson && pred.score < 0.36) continue;
-    if (isAnimal && pred.score < 0.35) continue;
+    if (isPerson && pred.score < 0.28) continue;
+    if (isAnimal && pred.score < 0.32) continue;
 
     const [x, y, w, h] = pred.bbox;
     const x1 = clamp01(x / iw);
     const y1 = clamp01(y / ih);
     const x2 = clamp01((x + w) / iw);
     const y2 = clamp01((y + h) / ih);
-    if ((x2 - x1) * (y2 - y1) < 0.0012) continue;
+    if ((x2 - x1) * (y2 - y1) < 0.00035) continue;
 
     out.push({
       label: isAnimal ? "animal" : "person",

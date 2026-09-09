@@ -233,6 +233,7 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
             if (!key.startsWith(`${cameraId}:`)) continue;
             if (key.includes(":script:")) continue;
             if (key.includes(":restricted_zone_entry")) continue;
+            if (key.includes(":group_movement")) continue;
             if (active.has(key)) continue;
             openEpisodes.current.delete(key);
             closeAlertIds.push(rec.alertId);
