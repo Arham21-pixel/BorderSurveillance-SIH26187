@@ -6,13 +6,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import threading
+from typing import TYPE_CHECKING
 
-from evidence.generator.clip import RollingBuffer
-from evidence.generator.evidence_engine import EvidenceEngine
 from vision.behaviour.analyser import BehaviourAnalyser, BehaviourEvent
-from vision.ingestion.video_source import open_source
-from vision.pipeline.config import VisionConfig
-from vision.pipeline.cv_pipeline import CVPipeline
+
+if TYPE_CHECKING:
+    from vision.pipeline.cv_pipeline import CVPipeline
 
 CLIP_KIND = {
     "walking": "normal",
@@ -129,9 +128,12 @@ _infer_lock = threading.Lock()
 
 def get_cv_pipeline() -> CVPipeline:
     global _cv
+    from vision.pipeline.config import VisionConfig
+    from vision.pipeline.cv_pipeline import CVPipeline as _CVPipeline
+
     with _cv_lock:
         if _cv is None:
-            _cv = CVPipeline(
+            _cv = _CVPipeline(
                 VisionConfig(
                     model_path=resolve_model_path(),
                     confidence=0.4,
@@ -175,6 +177,10 @@ def _analyze_clip_file_locked(
     loitering_threshold: float,
     evidence_dir: str,
 ) -> ClipAnalysisResult:
+    from evidence.generator.clip import RollingBuffer
+    from evidence.generator.evidence_engine import EvidenceEngine
+    from vision.ingestion.video_source import open_source
+
     pipeline = get_cv_pipeline()
     if not pipeline.is_ready():
         return ClipAnalysisResult(
