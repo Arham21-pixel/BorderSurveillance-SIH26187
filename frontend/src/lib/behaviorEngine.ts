@@ -4,6 +4,7 @@ import type { EventItem } from "../types/event";
 import { SCENARIO_META, type DemoScenario } from "./demoScenarios";
 import {
   bboxStraddlesFence,
+  isMostlyVertical,
   lineSide,
   pointCrossedFence,
   resolveFence,
@@ -128,11 +129,16 @@ function crossedFence(window: Sample[], fence: FenceLine) {
   const first = window[0];
   const last = window[window.length - 1];
   const net = Math.hypot(last.x - first.x, last.y - first.y);
-  if (net < 0.04) return false;
+  const climb = !isMostlyVertical(fence) && Math.abs(last.y - first.y) >= 0.05;
+  if (net < 0.035 && !climb) return false;
   return (
     pointCrossedFence({ x: first.x, y: first.y }, { x: last.x, y: last.y }, fence) ||
     pointCrossedFence({ x: first.x, y: first.footY }, { x: last.x, y: last.footY }, fence)
   );
+}
+
+function crossedAnyFence(window: Sample[], fences: FenceLine[]) {
+  return fences.some((fence) => crossedFence(window, fence));
 }
 
 function makeCue(
@@ -304,11 +310,15 @@ export class CameraAnalyzer {
     return track.samples.map((s) => ({ x: s.x, y: s.y }));
   }
 
-  update(raw: Detection[], now: number, scene?: { night?: boolean; fence?: FenceLine | null }): AnalyzerFrame {
-    let fence: FenceLine | null = this.fence;
-    if (scene && "fence" in scene) {
-      fence = scene.fence ? resolveFence(scene.fence) : null;
+  update(raw: Detection[], now: number, scene?: { night?: boolean; fence?: FenceLine | null; fences?: FenceLine[] }): AnalyzerFrame {
+    let fenceList: FenceLine[] = this.fence ? [this.fence] : [];
+    if (scene && "fences" in scene && scene.fences && scene.fences.length) {
+      fenceList = scene.fences.map((f) => resolveFence(f));
+      this.fence = fenceList[0];
+    } else if (scene && "fence" in scene) {
+      const fence = scene.fence ? resolveFence(scene.fence) : null;
       if (fence) this.fence = fence;
+      fenceList = fence ? [fence] : [];
     }
     this.matchTracks(raw, now);
     this.tracks = this.tracks.filter((tr) => now - tr.lastT < 2800);
@@ -316,8 +326,8 @@ export class CameraAnalyzer {
     const cues: BehaviorCue[] = [];
     const persons = this.tracks.filter((t) => t.label === "person");
     const animals = this.tracks.filter((t) => t.label === "animal");
-    const anyoneInZone = fence
-      ? this.tracks.some((t) => t.label === "person" && bboxStraddlesFence(t.bbox, fence))
+    const anyoneInZone = fenceList.length
+      ? this.tracks.some((t) => t.label === "person" && fenceList.some((f) => bboxStraddlesFence(t.bbox, f)))
       : false;
 
     if (persons.length >= GROUP_MIN) {
@@ -343,16 +353,18 @@ export class CameraAnalyzer {
       const window = samplesSince(track.samples, now, 5000);
       const short = samplesSince(track.samples, now, 2200);
       const c = center(track.bbox);
-      const side = fence ? Math.sign(lineSide(c.x, c.y, fence)) : 0;
+      const primary = fenceList[0];
+      const side = primary ? Math.sign(lineSide(c.x, c.y, primary)) : 0;
 
-      if (track.label === "person" && fence) {
-        const pathCross = crossedFence(window, fence);
+      if (track.label === "person" && fenceList.length) {
+        const pathCross = crossedAnyFence(window, fenceList);
         if (pathCross) {
           track.enteredSide = side !== 0 ? side : track.enteredSide ?? 1;
           crossingTracks.push(track);
         } else if (track.enteredSide != null) {
-          const stillInside =
-            bboxStraddlesFence(track.bbox, fence) || (side !== 0 && side === track.enteredSide);
+          const stillInside = fenceList.some(
+            (f) => bboxStraddlesFence(track.bbox, f) || (side !== 0 && side === track.enteredSide),
+          );
           if (stillInside) crossingTracks.push(track);
           else track.enteredSide = null;
         }
@@ -546,7 +558,7 @@ export function analyzeCamera(
   cameraId: string,
   detections: Detection[],
   now: number,
-  scene?: { night?: boolean; fence?: FenceLine | null },
+  scene?: { night?: boolean; fence?: FenceLine | null; fences?: FenceLine[] },
 ): AnalyzerFrame {
   let analyzer = analyzers.get(cameraId);
   if (!analyzer) {

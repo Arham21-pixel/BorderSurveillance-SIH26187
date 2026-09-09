@@ -5,8 +5,11 @@ export type FenceLine = {
   by: number;
 };
 
-/** Default IB fence: vertical midline. Typical clips show people walking left–right across a fence. */
+/** Default IB fence: vertical midline for left–right walk-across. */
 export const DEFAULT_FENCE: FenceLine = { ax: 0.5, ay: 0.04, bx: 0.5, by: 0.96 };
+
+/** Horizontal line for climb-over clips (person going over the wire). */
+export const CLIMB_FENCE: FenceLine = { ax: 0.06, ay: 0.5, bx: 0.94, by: 0.5 };
 
 function clamp(n: number, lo = 0, hi = 1) {
   return Math.max(lo, Math.min(hi, n));
@@ -14,6 +17,11 @@ function clamp(n: number, lo = 0, hi = 1) {
 
 export function resolveFence(fence: FenceLine | null | undefined): FenceLine {
   return fence ?? DEFAULT_FENCE;
+}
+
+export function fencesToMonitor(custom?: FenceLine | null): FenceLine[] {
+  if (custom) return [custom];
+  return [DEFAULT_FENCE, CLIMB_FENCE];
 }
 
 export function isMostlyVertical(f: FenceLine) {

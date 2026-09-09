@@ -135,13 +135,14 @@ function trajectoryPoints(raw: unknown): { x: number; y: number }[] | undefined 
   return points.length ? points : undefined;
 }
 
-function scenarioFromFilename(name: string): DemoScenario {
+function scenarioFromFilename(name: string): DemoScenario | null {
   const n = name.toLowerCase();
-  if (n.includes("border") || n.includes("cross")) return "border-crossing";
+  if (n.includes("border") || n.includes("cross") || n.includes("fence")) return "border-crossing";
   if (n.includes("group")) return "group-movement";
   if (n.includes("animal")) return "animal";
   if (n.includes("night")) return "night";
-  return "loitering";
+  if (n.includes("loiter") || n.includes("walk")) return "loitering";
+  return null;
 }
 
 export function DemoSessionProvider({ children }: { children: ReactNode }) {
@@ -274,7 +275,9 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
 
   const assignUpload = useCallback((cameraId: string, file: File) => {
     const url = URL.createObjectURL(file);
-    const inferred = scenarioFromFilename(file.name);
+    const inferred =
+      scenarioFromFilename(file.name) ??
+      ((DEMO_CAMERA_FLEET.find((c) => c.id === cameraId)?.scenario as DemoScenario) ?? "loitering");
     resetCameraAnalyzer(cameraId);
     dropCameraEpisodes(openEpisodes.current, cameraId);
     setAlerts((list) => list.filter((a) => a.camera_id !== cameraId));

@@ -17,7 +17,7 @@ import {
   loadObjectDetector,
   releaseVision,
 } from "../lib/objectDetector";
-import { DEFAULT_FENCE, fenceFromDrag, resolveFence, type FenceLine } from "../lib/fence";
+import { DEFAULT_FENCE, fenceFromDrag, fencesToMonitor, type FenceLine } from "../lib/fence";
 
 interface DemoCctvFeedProps {
   scenario: DemoScenario;
@@ -28,6 +28,7 @@ interface DemoCctvFeedProps {
   compact?: boolean;
   showBoxes?: boolean;
   showZone?: boolean;
+  monitorFence?: boolean;
   fence?: FenceLine | null;
   onPlaceFence?: (fence: FenceLine) => void;
   detections?: Detection[];
@@ -279,6 +280,7 @@ function drawVideoOverlay(
     cameraId?: string;
     thermal?: boolean;
     fence?: FenceLine;
+    fences?: FenceLine[];
   },
 ) {
   ctx.clearRect(0, 0, cw, ch);
@@ -302,22 +304,24 @@ function drawVideoOverlay(
   ctx.stroke();
 
   if (opts.showZone && opts.analyzing) {
-    const fence = opts.fence ?? DEFAULT_FENCE;
-    const x1 = ox + fence.ax * dw;
-    const y1 = oy + fence.ay * dh;
-    const x2 = ox + fence.bx * dw;
-    const y2 = oy + fence.by * dh;
-    ctx.strokeStyle = "rgba(255, 77, 103, 0.9)";
-    ctx.setLineDash([6, 5]);
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    const midX = (x1 + x2) / 2;
-    const midY = (y1 + y2) / 2;
-    drawChip(ctx, midX + 6, midY - 8, "FENCE", "#FF4D67", fontPx);
+    const lines = opts.fences?.length ? opts.fences : opts.fence ? [opts.fence] : [DEFAULT_FENCE];
+    for (const fence of lines) {
+      const x1 = ox + fence.ax * dw;
+      const y1 = oy + fence.ay * dh;
+      const x2 = ox + fence.bx * dw;
+      const y2 = oy + fence.by * dh;
+      ctx.strokeStyle = "rgba(255, 77, 103, 0.9)";
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      drawChip(ctx, midX + 6, midY - 8, "FENCE", "#FF4D67", fontPx);
+    }
   }
 
   if (opts.showBoxes && opts.analyzing) {
@@ -382,6 +386,7 @@ export default function DemoCctvFeed({
   compact = false,
   showBoxes = true,
   showZone = true,
+  monitorFence = false,
   fence = null,
   onPlaceFence,
   detections,
@@ -403,6 +408,8 @@ export default function DemoCctvFeed({
   showBoxesRef.current = showBoxes;
   const showZoneRef = useRef(showZone);
   showZoneRef.current = showZone;
+  const monitorFenceRef = useRef(monitorFence);
+  monitorFenceRef.current = monitorFence;
   const fenceRef = useRef(fence);
   fenceRef.current = fence;
   const onPlaceFenceRef = useRef(onPlaceFence);
@@ -517,18 +524,19 @@ export default function DemoCctvFeed({
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             thermalTick.current += 1;
             const dets = claimed ? visionDets.current : detectionsRef.current ?? [];
-            const activeFence = showZoneRef.current
-              ? resolveFence(previewFence.current ?? fenceRef.current)
-              : undefined;
+            const watchFence = monitorFenceRef.current || showZoneRef.current;
+            const fenceLines = watchFence
+              ? fencesToMonitor(previewFence.current ?? fenceRef.current)
+              : [];
             drawVideoOverlay(ctx, cssW, cssH, video, dets, {
               showBoxes: showBoxesRef.current,
-              showZone: showZoneRef.current,
+              showZone: watchFence,
               threat: claimed ? threatRef.current : threatPropRef.current,
               analyzing: analyzingRef.current,
               night: nightRef.current,
               cameraId: claimed ? cameraId : undefined,
               thermal: nightRef.current && thermalTick.current % 10 === 0,
-              fence: activeFence,
+              fences: fenceLines,
             });
           }
         }
@@ -549,12 +557,13 @@ export default function DemoCctvFeed({
               const lum = clipIsNight ? frameLuminance(video) : 1;
               const night = clipIsNight && isNightScene(lum);
               nightRef.current = night;
-              const activeFence = showZoneRef.current
-                ? resolveFence(previewFence.current ?? fenceRef.current)
-                : null;
+              const watchFence = monitorFenceRef.current || showZoneRef.current;
+              const fenceLines = watchFence
+                ? fencesToMonitor(previewFence.current ?? fenceRef.current)
+                : [];
               const frame = analyzeCamera(cameraId, raw, performance.now(), {
                 night,
-                fence: activeFence,
+                fences: fenceLines,
               });
               visionDets.current = frame.tracks;
               threatRef.current = frame.threat;

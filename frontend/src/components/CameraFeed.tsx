@@ -192,7 +192,11 @@ export default function CameraFeed({
   // Top-left HUD label
   const liveThreat = session?.runtime[activeCamera.id]?.threat ?? null;
   const liveNight = Boolean(session?.runtime[activeCamera.id]?.night);
-  const boundaryMode = scenario === "border-crossing" || liveThreat === "border-crossing";
+  const boundaryMode =
+    activeCamera.id === "CAM-02" ||
+    scenario === "border-crossing" ||
+    liveThreat === "border-crossing" ||
+    (activeCamera.sector ?? "").toLowerCase().includes("fence");
   const effectiveShowZone = showZone && boundaryMode;
   const feedLabel = (() => {
     if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
@@ -355,7 +359,6 @@ export default function CameraFeed({
               <button
                 type="button"
                 onClick={() => setShowZone(!showZone)}
-                disabled={!boundaryMode}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
                   effectiveShowZone
                     ? "bg-rose-500/15 text-rose-400 border border-rose-500/30 shadow-sm"
@@ -363,8 +366,8 @@ export default function CameraFeed({
                 }`}
                 title={
                   boundaryMode
-                    ? "Show or drag the virtual fence line. Crossing this line raises a boundary alert."
-                    : "Fence is used for boundary-crossing mode only."
+                    ? "Virtual fence is the crossing line. Drag on the video to match the real fence."
+                    : "Fence alerts run on Fence Cam / boundary clips."
                 }
               >
                 <Layers className="w-3 h-3" />
@@ -490,6 +493,7 @@ export default function CameraFeed({
             analyzing={isAnalyzing}
             showBoxes={showDetections}
             showZone={effectiveShowZone}
+            monitorFence={boundaryMode}
             fence={session?.runtime[activeCamera.id]?.fence ?? null}
             onPlaceFence={(line) => session?.setFenceLine(activeCamera.id, line)}
             detections={session?.runtime[activeCamera.id]?.detections}
