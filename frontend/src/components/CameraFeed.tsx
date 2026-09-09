@@ -198,7 +198,13 @@ export default function CameraFeed({
     if (sourceType === "webcam" && webcamStream) return "WEBCAM ACTIVE";
     if (activeCamera.videoUrl && liveThreat) {
       const night = liveNight ? " · NIGHT" : "";
-      return `DETECTED · ${SCENARIO_META[liveThreat].label.toUpperCase()}${night}`;
+      const short =
+        liveThreat === "border-crossing"
+          ? "BOUNDARY"
+          : liveThreat === "group-movement"
+            ? "GROUP"
+            : SCENARIO_META[liveThreat].label.toUpperCase();
+      return `DETECTED · ${short}${night}`;
     }
     if (activeCamera.videoUrl) return liveNight ? "LIVE · NIGHT / LOW-LIGHT" : "LIVE · AUTO-CLASSIFYING";
     return "ONLINE";
@@ -495,65 +501,21 @@ export default function CameraFeed({
         )}
 
         {/* ── HUD: Top Left — feed state ── */}
-        <div className="absolute top-3 left-4 font-mono text-[11px] text-[#26E5E5] flex flex-col gap-1 pointer-events-none z-20">
+        <div className="absolute top-2 left-2 font-mono text-[10px] text-[#26E5E5] pointer-events-none z-20 max-w-[46%]">
           <div
-            className={`flex items-center gap-2 font-medium tracking-wide bg-[#070B12]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08] ${hudInfo.textColor}`}
+            className={`inline-flex items-center gap-1.5 bg-[#070B12]/80 px-2 py-0.5 rounded-md border border-white/[0.08] ${hudInfo.textColor}`}
           >
-            <span
-              className={`w-2 h-2 rounded-full ${hudInfo.dot} ${hudInfo.pulse ? "animate-pulse" : ""}`}
-            />
-            <span>{feedLabel}</span>
-          </div>
-          <div className="text-[10px] text-slate-400 px-2.5">
-            {isAnalyzing
-              ? activeCamera.videoUrl
-                ? liveThreat
-                  ? `Auto-classified · ${SCENARIO_META[liveThreat].label}`
-                  : "On-device detector · classifying threat"
-                : "Awaiting assigned feed"
-              : "Analysis paused"}
+            <span className={`w-1.5 h-1.5 rounded-full ${hudInfo.dot} ${hudInfo.pulse ? "animate-pulse" : ""}`} />
+            <span className="truncate">{feedLabel}</span>
           </div>
         </div>
 
-        {/* ── HUD: Top Right — timestamp + playback vs analysis ── */}
-        <div className="absolute top-3 right-4 font-mono text-right pointer-events-none z-20">
-          <div className="text-xs font-semibold text-white flex items-center gap-1.5 justify-end bg-[#070B12]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/[0.08]">
-            <Clock className="w-3 h-3 text-[#26E5E5]" />
+        {/* ── HUD: Top Right — timestamp ── */}
+        <div className="absolute top-2 right-2 font-mono text-right pointer-events-none z-20">
+          <div className="text-[10px] font-medium text-white inline-flex items-center gap-1 bg-[#070B12]/80 px-2 py-0.5 rounded-md border border-white/[0.08]">
+            <Clock className="w-2.5 h-2.5 text-[#26E5E5]" />
             <span>{currentTime}</span>
-          </div>
-          <div className="mt-1.5 bg-[#070B12]/80 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-white/[0.08] text-left space-y-1.5 min-w-[118px]">
-            <div>
-              <div className="text-[8px] uppercase tracking-[0.14em] text-slate-500">Video</div>
-              <div
-                className={`flex items-center gap-1.5 text-[10px] font-semibold ${
-                  showLiveHLS || showWebcam || showDemoFeed ? "text-white" : "text-slate-500"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    showLiveHLS || showWebcam || showDemoFeed
-                      ? "bg-[#26E5E5] animate-pulse"
-                      : "bg-slate-600"
-                  }`}
-                />
-                {showLiveHLS || showWebcam || showDemoFeed ? "PLAYING" : "STANDBY"}
-              </div>
-            </div>
-            <div>
-              <div className="text-[8px] uppercase tracking-[0.14em] text-slate-500">AI Analysis</div>
-              <div
-                className={`flex items-center gap-1.5 text-[10px] font-semibold ${
-                  isAnalyzing ? "text-[#35D07F]" : "text-slate-500"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isAnalyzing ? "bg-[#35D07F] animate-pulse" : "bg-slate-600"
-                  }`}
-                />
-                {isAnalyzing ? "ACTIVE" : "IDLE"}
-              </div>
-            </div>
+            <span className={`ml-1 w-1.5 h-1.5 rounded-full ${isAnalyzing ? "bg-[#35D07F]" : "bg-slate-600"}`} />
           </div>
         </div>
 
@@ -577,9 +539,9 @@ export default function CameraFeed({
 
             {/* Analysis telemetry strip at bottom-left */}
             <div
-              className={`absolute bottom-3 left-4 z-20 font-mono text-[10px] flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-md shadow-lg transition-colors ${
+              className={`absolute bottom-2 left-2 z-20 font-mono text-[9px] flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${
                 analysisState === "ANALYZING" || isAnalyzing
-                  ? "text-[#35D07F] bg-[#070B12]/90 border-[#35D07F]/30"
+                  ? "text-[#35D07F] bg-[#070B12]/80 border-[#35D07F]/30"
                   : "text-slate-500 bg-[#070B12]/80 border-white/[0.06]"
               }`}
             >
@@ -608,7 +570,7 @@ export default function CameraFeed({
         )}
 
         {/* ── Bottom-right source tag ── */}
-        <div className="absolute bottom-3 right-4 z-20 font-mono text-[10px] text-slate-400 bg-[#070B12]/90 px-2.5 py-1.5 rounded-lg border border-white/[0.08] flex items-center gap-2 backdrop-blur-md">
+        <div className="absolute bottom-2 right-2 z-20 font-mono text-[9px] text-slate-400 bg-[#070B12]/80 px-2 py-0.5 rounded-md border border-white/[0.08] flex items-center gap-2">
           <span>{activeCamera.id}</span>
           {!showLiveHLS && !showWebcam && isOnline && (
             <button

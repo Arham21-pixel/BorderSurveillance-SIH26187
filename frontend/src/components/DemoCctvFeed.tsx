@@ -241,6 +241,29 @@ function letterbox(cw: number, ch: number, vw: number, vh: number) {
   return { ox: (cw - dw) / 2, oy: (ch - dh) / 2, dw, dh };
 }
 
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
+
+function drawChip(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+  color: string,
+  fontPx: number,
+) {
+  ctx.font = `${fontPx}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  const padX = 5;
+  const h = fontPx + 6;
+  const w = Math.ceil(ctx.measureText(text).width) + padX * 2;
+  ctx.fillStyle = "rgba(7,16,20,0.82)";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x + padX, y + fontPx + 1);
+  return { w, h };
+}
+
 function drawVideoOverlay(
   ctx: CanvasRenderingContext2D,
   cw: number,
@@ -261,14 +284,16 @@ function drawVideoOverlay(
   ctx.clearRect(0, 0, cw, ch);
   const box = letterbox(cw, ch, video.videoWidth || cw, video.videoHeight || ch);
   const { ox, oy, dw, dh } = box;
+  const fontPx = 9;
+  const stroke = 1.5;
 
   if (opts.night && opts.thermal) {
     drawThermalAssist(ctx, video, ox, oy, dw, dh);
   }
 
-  ctx.strokeStyle = "rgba(22, 214, 196, 0.85)";
-  ctx.lineWidth = 1.5;
-  const tick = 14;
+  ctx.strokeStyle = "rgba(22, 214, 196, 0.7)";
+  ctx.lineWidth = 1;
+  const tick = 8;
   ctx.beginPath();
   ctx.moveTo(ox, oy + tick); ctx.lineTo(ox, oy); ctx.lineTo(ox + tick, oy);
   ctx.moveTo(ox + dw - tick, oy); ctx.lineTo(ox + dw, oy); ctx.lineTo(ox + dw, oy + tick);
@@ -282,19 +307,17 @@ function drawVideoOverlay(
     const y1 = oy + fence.ay * dh;
     const x2 = ox + fence.bx * dw;
     const y2 = oy + fence.by * dh;
-    ctx.strokeStyle = "rgba(255, 77, 103, 0.95)";
-    ctx.setLineDash([8, 6]);
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "rgba(255, 77, 103, 0.9)";
+    ctx.setLineDash([6, 5]);
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(255, 77, 103, 0.95)";
-    ctx.font = "11px JetBrains Mono, monospace";
-    const lx = Math.min(x1, x2) + 8;
-    const ly = Math.min(y1, y2) + 16;
-    ctx.fillText("FENCE  ·  click/drag to match this clip", lx, ly);
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    drawChip(ctx, midX + 6, midY - 8, "FENCE", "#FF4D67", fontPx);
   }
 
   if (opts.showBoxes && opts.analyzing) {
@@ -303,11 +326,11 @@ function drawVideoOverlay(
         const trail = getTrackPath(opts.cameraId, det.track_id);
         if (trail.length < 2) continue;
         ctx.beginPath();
-        ctx.strokeStyle = det.label === "animal" ? "rgba(255,176,32,0.85)" : "rgba(22,214,196,0.85)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = det.label === "animal" ? "rgba(255,176,32,0.8)" : "rgba(22,214,196,0.8)";
+        ctx.lineWidth = 1.4;
         trail.forEach((p, i) => {
-          const x = ox + p.x * dw;
-          const y = oy + p.y * dh;
+          const x = ox + clamp01(p.x) * dw;
+          const y = oy + clamp01(p.y) * dh;
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         });
@@ -315,47 +338,39 @@ function drawVideoOverlay(
       }
     }
     for (const det of dets) {
-      const x = ox + det.bbox.x1 * dw;
-      const y = oy + det.bbox.y1 * dh;
-      const bw = (det.bbox.x2 - det.bbox.x1) * dw;
-      const bh = (det.bbox.y2 - det.bbox.y1) * dh;
+      const x1 = clamp01(det.bbox.x1);
+      const y1 = clamp01(det.bbox.y1);
+      const x2 = clamp01(det.bbox.x2);
+      const y2 = clamp01(det.bbox.y2);
+      const x = ox + Math.min(x1, x2) * dw;
+      const y = oy + Math.min(y1, y2) * dh;
+      const bw = Math.abs(x2 - x1) * dw;
+      const bh = Math.abs(y2 - y1) * dh;
+      if (bw < 4 || bh < 4) continue;
       const animal = det.label === "animal";
       const heat = opts.night;
       ctx.strokeStyle = animal ? "#FFB020" : heat ? "#FF6B35" : "#26E5E5";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = stroke;
       ctx.strokeRect(x, y, bw, bh);
-      if (heat && !animal) {
-        ctx.fillStyle = "rgba(255, 90, 30, 0.18)";
-        ctx.fillRect(x, y, bw, bh);
-      }
-      const tag = animal
-        ? `ID #${det.track_id ?? "—"}  animal  ${(det.confidence * 100).toFixed(0)}%`
-        : `ID #${det.track_id ?? "—"}  ${heat ? "thermal-style" : det.label}  ${(det.confidence * 100).toFixed(0)}%`;
-      ctx.font = "11px JetBrains Mono, monospace";
-      const tw = Math.max(118, ctx.measureText(tag).width + 10);
-      const ty = Math.max(4, y - 18);
-      ctx.fillStyle = "rgba(7,16,20,0.9)";
-      ctx.fillRect(x, ty, tw, 16);
-      ctx.fillStyle = animal ? "#FFB020" : "#26E5E5";
-      ctx.fillText(tag, x + 5, ty + 12);
+      const kind = animal ? "animal" : heat ? "thermal" : det.label;
+      const tag = `#${det.track_id ?? "—"} ${kind}`;
+      const tagY = y > oy + 14 ? y - 13 : y + 2;
+      drawChip(ctx, x, tagY, tag, animal ? "#FFB020" : "#26E5E5", fontPx);
     }
   }
 
   if (opts.threat) {
-    const label = `THREAT: ${SCENARIO_META[opts.threat].label.toUpperCase()}`;
-    ctx.font = "12px JetBrains Mono, monospace";
-    const tw = ctx.measureText(label).width + 16;
-    ctx.fillStyle = "rgba(7,16,20,0.9)";
-    ctx.fillRect(ox + dw - tw - 8, oy + 8, tw, 22);
-    ctx.fillStyle = opts.threat === "border-crossing" ? "#FF4D67" : "#26E5E5";
-    ctx.fillText(label, ox + dw - tw, oy + 24);
+    const animal = opts.threat === "animal";
+    const label = animal
+      ? "ANIMAL"
+      : opts.threat === "night"
+        ? "NIGHT"
+        : SCENARIO_META[opts.threat].label.toUpperCase();
+    const color = opts.threat === "border-crossing" ? "#FF4D67" : animal ? "#FFB020" : "#26E5E5";
+    drawChip(ctx, ox + 6, oy + 6, label, color, fontPx);
   }
   if (opts.night) {
-    ctx.font = "11px JetBrains Mono, monospace";
-    ctx.fillStyle = "rgba(7,16,20,0.9)";
-    ctx.fillRect(ox + 8, oy + dh - 28, 268, 20);
-    ctx.fillStyle = "#FF922E";
-    ctx.fillText("NIGHT · FALSE-COLOR ASSIST (NOT FLIR)", ox + 16, oy + dh - 14);
+    drawChip(ctx, ox + 6, oy + dh - 16, "NIGHT ASSIST", "#FF922E", fontPx);
   }
 }
 
@@ -404,7 +419,7 @@ export default function DemoCctvFeed({
   const lastActiveKeys = useRef<string[]>([]);
   const busy = useRef(false);
   const lastDetectAt = useRef(0);
-  const overlaySize = useRef({ w: 0, h: 0 });
+  const overlaySize = useRef({ w: 0, h: 0, dpr: 1 });
   const thermalTick = useRef(0);
   const draggingZone = useRef(false);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
@@ -481,25 +496,31 @@ export default function DemoCctvFeed({
           progress = video.currentTime / video.duration;
         }
 
-        const parent = overlayRef.current?.parentElement;
-        const w = parent?.clientWidth || 640;
-        const h = parent?.clientHeight || 360;
         const overlay = overlayRef.current;
         if (overlay && now - lastOverlay > 66) {
           lastOverlay = now;
-          if (overlaySize.current.w !== w || overlaySize.current.h !== h) {
-            overlay.width = w;
-            overlay.height = h;
-            overlaySize.current = { w, h };
+          const rect = overlay.getBoundingClientRect();
+          const cssW = Math.max(1, Math.round(rect.width));
+          const cssH = Math.max(1, Math.round(rect.height));
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          if (
+            overlaySize.current.w !== cssW ||
+            overlaySize.current.h !== cssH ||
+            overlaySize.current.dpr !== dpr
+          ) {
+            overlay.width = Math.round(cssW * dpr);
+            overlay.height = Math.round(cssH * dpr);
+            overlaySize.current = { w: cssW, h: cssH, dpr };
           }
           const ctx = overlay.getContext("2d");
           if (ctx) {
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             thermalTick.current += 1;
             const dets = claimed ? visionDets.current : detectionsRef.current ?? [];
             const activeFence = showZoneRef.current
               ? resolveFence(previewFence.current ?? fenceRef.current)
               : undefined;
-            drawVideoOverlay(ctx, overlay.width, overlay.height, video, dets, {
+            drawVideoOverlay(ctx, cssW, cssH, video, dets, {
               showBoxes: showBoxesRef.current,
               showZone: showZoneRef.current,
               threat: claimed ? threatRef.current : threatPropRef.current,
